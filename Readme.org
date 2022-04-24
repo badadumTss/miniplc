@@ -1,0 +1,316 @@
+#+TITLE: MiniPL interpreter
+#+AUTHOR: Luca Zaninotto
+#+DATE: 14 March 2022
+#+OPTIONS: tex:t
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER_EXTRA: \newcommand{\symb}[1]{\ensuremath{\mbox{\texttt{<#1>} }}}
+#+LATEX_HEADER_EXTRA: \newcommand{\lit}[1]{\ensuremath{\mbox{\texttt{'#1'} }}}
+* Overview
+  This MiniPL interpreter respects the language definition posted in
+  [[https://moodle.helsinki.fi/pluginfile.php/4052753/mod_resource/content/1/MiniPL.pdf][the MiniPL specification]] document. The language chosen to implement
+  it is =rust=. The choice of this language had both advantages and
+  disadvantages, but they were both considered when making the
+  decision for which language to adopt. The main drawback is that the
+  language is strictly imperative, and not prone to runtime. That is
+  to say that some features of other languages (=C++= or =Java= to
+  mention a few), like runtime evaluation of objects, are not
+  available. However this choice came also with some advantages. First
+  of all the fact that the project compiles implies that it will not
+  segfault. This is done trough the mechanism of borrow checking of
+  references and compile-time check of ~match~ branches (a branch in
+  fact has to consider all possible outcomes, otherwise the project
+  would not compile).
+
+  Another advantage is that the rust development environment is rich
+  and mature, so many utilities (test coverage reports, automatic
+  documentation generation, and many more) are already available.
+
+  In the next chapters will be presented the internal organization and
+  representation of abstract concepts such as Abstract Syntax Tree
+  Nodes (~ASTNode~) and the evaluation of the program.
+** Development
+   This project uses [[https://doc.rust-lang.org/cargo/index.html][cargo]] as a build system. Therefore all cargo
+   commands are available
+   - Building the project can be done with
+     #+BEGIN_SRC sh
+       cargo build
+     #+END_SRC
+   - Testing (running tests in [[file:src/tests/][src/tests]]) can be done with
+     #+BEGIN_SRC sh
+       cargo test
+     #+END_SRC
+   - Test coverage can be collected using [[https://github.com/xd009642/tarpaulin][tarpaulin]], once installed
+     the coverage result can be generated using
+     #+BEGIN_SRC sh
+       cargo tarpaulin -o Html
+     #+END_SRC
+** This documentation
+   Will probably look a bit quirky on GitHub. It was generated thanks
+   to [[https://orgmode.org/][org-mode]] unicorns and can be transpiled in latex with
+   ~(org-latext-export-to-latex)~ in emacs.
+
+* Internal organization
+  This MiniPL interpreter is organized in 5 different modules: =core=,
+  =interpreter=, =parser=, =scanner= and =tests=. Each of them has a
+  particular reason to exist and implements some unique features.
+  - the =core= :: represents part of the system shared between the
+    various components. It contains for example the representation for
+    AST nodes (~ASTNode~), the error utilities, the token
+    representation (~Token~) and an abstraction for all the variables
+    considered by the interpreter.
+  - the =tests= :: module is divided again into sub module, each one
+    responsible for testing one of the other modules
+  - the =scanner= :: module is where the ~Scanner~ structure is defined,
+    along with all its methods that allow it to emit a sequence of
+    tokens (namely, ~scan_token()~).
+  - the =parser= :: module uses the =scanner= in order to generate an
+    AST for the program being read. Since the language is pretty
+    simple and there are no performance constraints on the project,
+    the result of the parser operations (an ~ASTNode~ containing the
+    whole program in a tree structure) is directly interpreted by the
+    =interpreter=
+  - the =interpreter= :: module exposes some functions to allow to run
+    a file or a single line of code. It translates the input in an
+    ~ASTNode~ trough the parser and then launches ~eval()~ on it,
+    returning errors if there were during the execution, or returning
+    the result of the program.
+
+** Token recognition
+   The token recognition is done in the =scanner= module. The scanner
+   structure keeps in memory the source code as a vector of characters
+   and the current position it's at as an usize value:
+   #+BEGIN_SRC rust
+     pub struct Scanner {
+	 source: Vec<char>,
+	 current: usize,
+	 line_num: usize,
+	 line_start: usize,
+	 init: bool,
+     }
+   #+END_SRC
+   Keeping also the line number and line start allows for a better
+   description of the syntax errors it might encounter when scanning
+   for new tokens (e.g. unknown/unexpected sequences of
+   characters). The main function of the scanner is ~next_token()~
+   which emits next valid token in the source file or a ~SyntaxError~.
+
+   #+BEGIN_SRC rust
+     /// Returns next token based on the scan, which could recognize
+     /// also white space tokens
+     pub fn next_token(&mut self) -> Result<Token, SyntaxError> {
+	 loop {
+	     /* invariant: at some point scan_token returns a token or
+	      ,* a syntax error, either a real token or a Eof since it
+	      ,* is at the end of file */
+	     match self.scan_token() {
+		 Ok(token) => match token.kind {
+		     Kind::Eol => {
+			 self.line_num += 1;
+			 self.line_start = self.current + 1;
+		     }
+		     Kind::Whites | Kind::Comment => {}
+		     _ => return Ok(token),
+		 },
+		 Err(syn_error) => return Err(syn_error),
+	     }
+	 }
+     }
+   #+END_SRC
+
+   When the end of the source is reached, the function keeps emitting
+   a particular token -- ~EOF~ -- which indicates that the end of file
+   is reached. It is nonetheless a valid token, parsed and
+   subsequently interpreted (just by doing nothing and returning).
+   ~scan_token()~ is the function that actually reads the next
+   character and either outputs directly a token or delegates to
+   another function to do so (for simple token, such as single
+   characters or double characters the recognition can be done directly
+   in the function, for more complex, like literals, keywords, digits,
+   ecc. the scanning is done in a separate function). The recognized
+   regular expression for each token are the following (The special
+   character '$$' indicates the end of the file):
+   | *Token*      | *Regular expression*                      |
+   |--------------+-------------------------------------------|
+   | LeftParen    | '('                                       |
+   |--------------+-------------------------------------------|
+   | RightParen   | ')'                                       |
+   |--------------+-------------------------------------------|
+   | Minus        | '-'                                       |
+   |--------------+-------------------------------------------|
+   | Plus         | '+'                                       |
+   |--------------+-------------------------------------------|
+   | Semicolon    | ';'                                       |
+   |--------------+-------------------------------------------|
+   | Slash        | '/'                                       |
+   |--------------+-------------------------------------------|
+   | Star         | '*'                                       |
+   |--------------+-------------------------------------------|
+   | Bang         | '!'                                       |
+   |--------------+-------------------------------------------|
+   | And          | '&'                                       |
+   |--------------+-------------------------------------------|
+   | Equal        | ''                                        |
+   |--------------+-------------------------------------------|
+   | Colon        | ':'                                       |
+   |--------------+-------------------------------------------|
+   | ColonEqual   | ':='                                      |
+   |--------------+-------------------------------------------|
+   | Greater      | '>'                                       |
+   |--------------+-------------------------------------------|
+   | GreaterEqual | '>='                                      |
+   |--------------+-------------------------------------------|
+   | Less         | '<'                                       |
+   |--------------+-------------------------------------------|
+   | LessEqual    | '<='                                      |
+   |--------------+-------------------------------------------|
+   | Ddot         | \.\.                                      |
+   |--------------+-------------------------------------------|
+   | Identifier   | \w*                                       |
+   |--------------+-------------------------------------------|
+   | String       | \"[^\"]*\"                                |
+   |--------------+-------------------------------------------|
+   | Integer      | \d*                                       |
+   |--------------+-------------------------------------------|
+   | Type         | ("string" \(\mid\) "int" \(\mid\) "bool") |
+   |--------------+-------------------------------------------|
+   | False        | "false"                                   |
+   |--------------+-------------------------------------------|
+   | For          | "for"                                     |
+   |--------------+-------------------------------------------|
+   | Print        | "print"                                   |
+   |--------------+-------------------------------------------|
+   | Read         | "read"                                    |
+   |--------------+-------------------------------------------|
+   | True         | "true"                                    |
+   |--------------+-------------------------------------------|
+   | Var          | "var"                                     |
+   |--------------+-------------------------------------------|
+   | In           | "in"                                      |
+   |--------------+-------------------------------------------|
+   | Do           | "do"                                      |
+   |--------------+-------------------------------------------|
+   | End          | "end"                                     |
+   |--------------+-------------------------------------------|
+   | Assert       | "assert"                                  |
+   |--------------+-------------------------------------------|
+   | Eof          | '$$'                                      |
+   |--------------+-------------------------------------------|
+   | Whites       | [' ','\t','\n']*                          |
+   |--------------+-------------------------------------------|
+   | Comment      | (//[^\n]*\n /or/  /*[^(*,/)]*/)           |
+   |--------------+-------------------------------------------|
+   | Eol          | '\n'                                      |
+   |--------------+-------------------------------------------|
+** Grammar
+   The original grammar for the MiniPL language was partially
+   incomplete, and had to be adjusted in order to build a proper
+   parser for it. The resulting grammar is the following:
+
+   | < ~prog~ >       | \rightarrow | < ~stmts~ >                                                           |
+   | < ~stmts~ >      | \rightarrow | < ~stmt~ > ~";"~ ( < ~stmt~ > ~";"~ )*                                |
+   | < ~stmt~ >       | \rightarrow | < ~var~ > < ~var_id~ > ~":"~ < ~type~ > [ ~":="~ < ~expression~ > ]   |
+   |                  | *or*        | < ~var_id~ > ~":=~ > < ~expression~ >                                 |
+   |                  | *or*        | ~"for"~ < ~var_id~ > ~"in"~ < ~expression~ > ~".."~ < ~expression~ >  |
+   |                  |             | ~"do"~ < ~stmts~ > ~"end for"~                                        |
+   |                  | *or*        | ~"read"~ < ~var_id~ >                                                 |
+   |                  | *or*        | ~"print"~ < ~expression~ >                                            |
+   |                  | *or*        | ~"assert"~ > ~"("~ < ~expression~ > ~")"~                             |
+   | < ~expression~ > | \rightarrow | < ~equality~ > ( ~"&"~ < ~equality~ > )*                              |
+   | < ~equality~ >   | \rightarrow | < ~comparison~ > ( ~"="~ < ~expression~ > )*                          |
+   | < ~comparison~ > | \rightarrow | < ~term~ > (( ~">"~ *or* ~">="~ *or* ~"<"~ *or* ~"<="~ ) < ~term~ >)* |
+   | < ~term~ >       | \rightarrow | < ~factor~ > ((~"-"~ > *or* ~"+"~ >) < ~factor~ >)*                   |
+   | < ~factor~ >     | \rightarrow | < ~unary~ > (~"/"~ > *or* ~"*"~ >) < ~unary~ >)*                      |
+   | < ~unary~ >      | \rightarrow | ~"!"~ > < ~unary~ > *or* < ~primary~ >                                |
+   | < ~primary~ >    | \rightarrow | < ~literal~ > *or* < ~var_id~ > *or* ~"("~ < ~expression~ > ~")"~     |
+   | < ~type~ >       | \rightarrow | ~"string~ > *or* ~"int~ *or* ~"bool~                                  |
+   | < ~literal~ >    | \rightarrow | < ~string~ > *or* < ~int~ > *or* < ~bool~ >                           |
+   | < ~string~ >     | \rightarrow | ~"[^ "]"~                                                             |
+   | < ~int~ >        | \rightarrow | ~ [0-9] ~ *                                                           |
+   | < ~bool~ >       | \rightarrow | ~"true"~ *or* ~"false"~                                               |
+   
+   It describes a dialect of MiniPL that allows for all the core
+   aspects of the language plus some more (=>==, =<== operators,
+   =read= with arbitrary expression and more).
+** AST representation
+   The next step in order to build a parser is define how the AST is
+   rapresented. Since rust is not an OOP language it wasn't possible to
+   represent the generalization of nodes trough abstract classes,
+   however, trough enumeration we can have something similar. The
+   original code is long, but the idea is the following: a base
+   enumeration ~ASTNode~ represents an abstract node, each enumeration
+   contains the specific node with all the needed elements to evaluate
+   it.
+   #+BEGIN_SRC rust
+     pub enum ASTNode {
+	 Program(ProgramNode),
+	 // Expressions
+	 BinaryExpression(BinaryExprNode),
+	 Identifier(IdentifierExprNode),
+	 Literal(LiteralExprNode),
+
+	 /* ...  Many more node types, one for each item in the grammar
+	  ,* ... */
+    
+	 ReadStmt(ReadStmtNode),
+	 AssertStmt(AssertStmtNode),
+
+	 // Void node for EOF
+	 EofStmt(EofNode),
+     }
+   #+END_SRC
+   Each ~-Node~ carried by the enumeration is a more complex type, for
+   example
+   #+BEGIN_SRC rust
+     /// Node that rapresent a whole program, each statement is an ASTNode
+     /// in a Boxed buffer
+     #[derive(Clone, Debug)]
+     pub struct ProgramNode {
+	 pub(crate) statements: Box<[ASTNode]>,
+     }
+   #+END_SRC
+   Is the node that represent the whole program, containing the
+   statements in a Boxed vector of generic ~ASTNode~.
+** Error handling
+   Error are carried trough internally for each phase. Usually each
+   phase returns either the required structure or a vector containing
+   the errors found, except for the scanner, which returns iteratively
+   errors or correct results. The errors carry the position where they
+   occurred and a description, for syntax errors, since they are
+   handled by the scanner or parser (both of which have a reference to
+   the source code) they can also include the snippet of the line
+   where they occurred. The main structures that refer to errors
+   during interpretation are ~SyntaxError~ and ~ParseError~
+   #+BEGIN_SRC rust
+     #[derive(Debug, Clone)]
+     pub struct SyntaxError {
+	 pub position: Position,
+	 pub raw_line: String,
+	 pub description: String,
+     }
+
+     #[derive(Debug, Clone)]
+     pub struct ParseError {
+	 pub position: Position,
+	 pub description: String,
+     }
+   #+END_SRC
+   Internal funciton use the rust construct ~Result<T,E>~ in order to
+   return either a valid structure or an error. For example
+   #+BEGIN_SRC rust
+     pub fn parse(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
+	 // implementation
+     }
+   #+END_SRC
+   could either return an ~ASTNode~ (in this case the AST rapresenting
+   the whole program) or a vector of ~SyntaxError~. The use of Vectors
+   is efficent in rust since they are implemented trough references to
+   allocations on the heap, therefore each time a vector is returned
+   the memory doesent need to be copied but only the reference needs
+   to.
+
+** Work hour log
+   The project took about 40 hours of work to complete, the early
+   stages of the project were the most critical ones, from the design
+   of the single components to the actual implementation of the
+   =scanner= and then the =parser=. The later stages proceeded
+   gracefully thanks to the choices made in the early stages.
