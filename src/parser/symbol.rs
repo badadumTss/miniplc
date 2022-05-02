@@ -8,7 +8,7 @@ impl Parser {
     pub fn parse_symbol(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
         trace!("parsing symbol");
         let scope = self.context.last().unwrap();
-        match scope.get(&self.current.lexeme) {
+        match scope.get(self.current.lexeme.clone()) {
             Some(symbol) => match symbol.s_type {
                 SymbolType::Function => self.parse_function_call(),
                 SymbolType::Procedure => self.parse_procedure_call(),

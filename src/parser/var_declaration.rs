@@ -19,14 +19,7 @@ impl Parser {
     ) -> Result<(), Vec<SyntaxError>> {
         trace!("declaring variable {} of type {}", lexeme, ttype);
         match self.context.pop() {
-            Some(mut table) => match table.insert(
-                lexeme.clone(),
-                Symbol {
-                    s_type: SymbolType::Var,
-                    r_type: ttype,
-                    position,
-                },
-            ) {
+            Some(mut table) => match table.get(lexeme.clone()) {
                 Some(v) => Err(vec![self.error_at_current(
                     format!(
 			"Declaration of an already declared variable: {}, previously declared at {}",
@@ -35,6 +28,12 @@ impl Parser {
                     .as_str(),
                 )]),
                 None => {
+                    table.push(Symbol {
+                        name: lexeme.clone(),
+                        s_type: SymbolType::Var,
+                        r_type: ttype,
+                        position,
+                    });
                     self.context.push(table);
                     Ok(())
                 }

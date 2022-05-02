@@ -55,7 +55,7 @@ impl Parser {
         let var_id = self.advance();
         match var_id.kind {
             Kind::Identifier => match self.context.last() {
-                Some(table) => match table.get(&var_id.lexeme) {
+                Some(table) => match table.get(var_id.lexeme.clone()) {
                     Some(_) => match self.advance().kind {
                         Kind::In => match self.parse_expression() {
                             Ok(ASTNode::ExpressionStmt(expr_from)) => match self.current.kind {

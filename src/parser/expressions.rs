@@ -29,9 +29,13 @@ impl Parser {
             }
             Kind::Identifier => {
                 trace!("found identifier: {}", self.current.clone().lexeme);
-                match self.context.last().unwrap().get(&self.current.lexeme) {
+                match self.context.last().unwrap().get(self.current.lexeme.clone()) {
 		    Some(sym) => match sym.s_type {
-			SymbolType::Function => self.parse_function_call(),
+			SymbolType::Function => {
+			    let to_return = self.parse_function_call()?;
+			    self.advance();
+			    Ok(to_return)
+			},
 			SymbolType::Procedure => Err(vec![self.error_at_current("Procedures produce no value to return, cannot be used inside an expression")]),
 			_ => {
 			    trace!("found identifier {}", self.current.clone().lexeme);

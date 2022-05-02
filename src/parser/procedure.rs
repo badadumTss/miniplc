@@ -34,14 +34,12 @@ impl Parser {
                             trace!("block parsed");
                             match self.context.pop() {
                                 Some(mut ctx) => {
-                                    ctx.insert(
-                                        id.lexeme.clone(),
-                                        Symbol {
-                                            s_type: SymbolType::Function,
-                                            r_type: Type::Simple(SimpleType::Void),
-                                            position: id.position,
-                                        },
-                                    );
+                                    ctx.push(Symbol {
+                                        name: id.lexeme.clone(),
+                                        s_type: SymbolType::Procedure,
+                                        r_type: Type::Simple(SimpleType::Void),
+                                        position: id.position,
+                                    });
                                     self.context.push(ctx);
                                 }
                                 None => {
@@ -50,6 +48,7 @@ impl Parser {
                             };
                             Ok(ASTNode::ProcedureDecl(ProcedureDeclNode {
                                 position: self.current.position,
+                                name: id.lexeme,
                                 args,
                                 block: Box::new(block),
                             }))
@@ -68,11 +67,15 @@ impl Parser {
             current_with_expected!(
                 Kind::RightParen,
                 self,
-                Ok(ASTNode::ProcedureCallStmt(ProcedureCallNode {
-                    position: f_name.position,
-                    args: params,
-                    target: f_name.lexeme,
-                }))
+                advance_with_expected!(
+                    Kind::Semicolon,
+                    self,
+                    Ok(ASTNode::ProcedureCallStmt(ProcedureCallNode {
+                        position: f_name.position,
+                        args: params,
+                        target: f_name.lexeme,
+                    }))
+                )
             )
         })
     }

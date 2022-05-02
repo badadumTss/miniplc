@@ -16,7 +16,7 @@ impl Parser {
         trace!("parsing var assignment");
         let id = self.current.clone(); // the current token is the identifier of the variable
         match self.context.last() {
-            Some(table) => match table.get(&id.lexeme) {
+            Some(table) => match table.get(id.lexeme.clone()) {
                 Some(_) => match self.advance().kind {
                     Kind::ColonEqual => match self.parse_expression() {
                         Ok(node) => Ok(ASTNode::VarReassignment(VarReassignmentExprNode {

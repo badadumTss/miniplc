@@ -16,7 +16,7 @@ impl Parser {
         let pos = self.current.clone().position;
         match self.advance().kind {
             Kind::Identifier => match self.context.last() {
-                Some(table) => match table.get(&self.current.clone().lexeme) {
+                Some(table) => match table.get(self.current.clone().lexeme) {
                     Some(_) => match self.advance().kind {
                         Kind::Semicolon => Ok(ASTNode::ReadStmt(ReadStmtNode {
                             position: pos,

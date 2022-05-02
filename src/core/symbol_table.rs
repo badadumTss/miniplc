@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 use crate::scanner::position::Position;
 
@@ -13,8 +13,9 @@ pub enum SymbolType {
     Param,
 }
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug)]
 pub struct Symbol {
+    pub name: String,
     pub s_type: SymbolType,
     pub r_type: Type,
     pub position: Position,
@@ -22,21 +23,28 @@ pub struct Symbol {
 
 #[derive(Clone, Debug)]
 pub struct SymbolTable {
-    pub symbols: HashMap<String, Symbol>,
+    pub symbols: Vec<Symbol>,
 }
 
 impl SymbolTable {
-    pub fn get(&self, key: &str) -> Option<&Symbol> {
-        self.symbols.get(key)
+    pub fn get(&self, key: String) -> Option<Symbol> {
+        self.symbols
+            .iter()
+            .find(|sym| sym.name.eq_ignore_ascii_case(&key))
+            .cloned()
     }
 
-    pub fn insert(&mut self, key: String, value: Symbol) -> Option<Symbol> {
-        self.symbols.insert(key, value)
+    pub fn push(&mut self, sym: Symbol) {
+        self.symbols.push(sym)
+    }
+
+    pub fn pop(&mut self) -> Option<Symbol> {
+        self.symbols.pop()
     }
 
     pub fn new() -> SymbolTable {
         SymbolTable {
-            symbols: HashMap::new(),
+            symbols: Vec::new(),
         }
     }
 }
@@ -50,8 +58,8 @@ impl Display for Symbol {
 impl Display for SymbolTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut res = String::new();
-        for (name, sym) in self.symbols.iter() {
-            res = format!("{}, ({}, {})", res, name, sym);
+        for sym in self.symbols.iter() {
+            res = format!("{}, ({}, {})", res, sym.name, sym);
         }
         write!(f, "{}", res)
     }

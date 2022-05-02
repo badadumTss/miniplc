@@ -33,6 +33,7 @@ pub enum ASTNode {
     AssertStmt(AssertStmtNode),
     FunctionCallStmt(FunctionCallNode),
     ProcedureCallStmt(ProcedureCallNode),
+    ReturnStmt(ReturnStmtNode),
 
     // Void node for EOF
     EofStmt(EofNode),
@@ -162,6 +163,7 @@ pub struct AssertStmtNode {
 
 #[derive(Clone, Debug)]
 pub struct FunctionDeclNode {
+    pub name: String,
     pub position: Position,
     pub args: SymbolTable,
     pub block: Box<ASTNode>,
@@ -177,6 +179,7 @@ pub struct FunctionCallNode {
 
 #[derive(Clone, Debug)]
 pub struct ProcedureDeclNode {
+    pub name: String,
     pub position: Position,
     pub args: SymbolTable,
     pub block: Box<ASTNode>,
@@ -202,6 +205,12 @@ pub struct ProgramNameNode {
 }
 
 #[derive(Clone, Debug)]
+pub struct ReturnStmtNode {
+    pub token: Token,
+    pub value: Option<Box<ASTNode>>,
+}
+
+#[derive(Clone, Debug)]
 pub struct EofNode {
     pub eof: Token,
 }
@@ -209,7 +218,11 @@ pub struct EofNode {
 impl Display for ASTNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ASTNode::Program(_) => write!(f, "program"),
+            ASTNode::Program(node) => write!(
+                f,
+                "program: {:#?},\nfunctions: {:#?},\nprocedures: {:#?},\nmain block: {:#?}",
+                node.program_name, node.functions, node.procedures, node.main_block
+            ),
             ASTNode::BinaryExpression(_) => write!(f, "binary expression"),
             ASTNode::Identifier(_) => write!(f, "identifier"),
             ASTNode::Literal(LiteralExprNode {
@@ -232,6 +245,7 @@ impl Display for ASTNode {
             ASTNode::ProgramName(_) => write!(f, "program name"),
             ASTNode::FunctionCallStmt(_) => write!(f, "function call"),
             ASTNode::ProcedureCallStmt(_) => write!(f, "procedure call"),
+            ASTNode::ReturnStmt(_) => write!(f, "return statement"),
         }
     }
 }

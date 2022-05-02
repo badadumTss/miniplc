@@ -12,7 +12,6 @@ impl Parser {
     pub fn parse_block(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
         trace!("parse block");
         let start = self.current.clone();
-
         let mut stmts: Vec<ASTNode> = Vec::new();
         let mut errors: Vec<SyntaxError> = Vec::new();
 
@@ -22,8 +21,12 @@ impl Parser {
                 self.go_back();
             }
             match self.parse_statement() {
-                Ok(stmt) => stmts.push(stmt),
+                Ok(stmt) => {
+                    trace!("OK, statement read: {}", stmt);
+                    stmts.push(stmt)
+                }
                 Err(errs) => {
+                    trace!("NOT OK, errors: {:?}", errs);
                     for err in errs {
                         errors.push(err);
                     }

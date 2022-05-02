@@ -47,15 +47,12 @@ impl Parser {
         trace!("parsing statement");
         match self.advance().kind {
             Kind::Var => self.parse_var_declaration(),
-            Kind::Identifier => {
-                let sym = self.parse_symbol()?;
-                trace!("Parsed symbol, resulted in AST: {}", sym);
-                advance_with_expected!(Kind::Semicolon, self, Ok(sym))
-            }
+            Kind::Identifier => self.parse_symbol(),
             Kind::For => self.parse_for_loop(),
             Kind::Read => self.parse_read(),
             Kind::Print => self.parse_print(),
             Kind::Assert => self.parse_assert(),
+            Kind::Return => self.parse_return(),
             other => Err(vec![
                 self.error_at_current(&format!("Unexpected token: {}", other))
             ]),

@@ -13,8 +13,6 @@ mod types;
 mod var_assignment;
 mod var_declaration;
 
-use std::collections::HashMap;
-
 use log::trace;
 
 use crate::core::ast::*;
@@ -71,9 +69,7 @@ impl Parser {
             },
             next: None,
             syntax_errors: vec![],
-            context: vec![SymbolTable {
-                symbols: HashMap::new(),
-            }],
+            context: vec![SymbolTable::new()],
         }
     }
 

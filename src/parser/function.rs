@@ -3,7 +3,7 @@ use log::trace;
 use crate::{
     advance_with_expected,
     core::{
-        ast::{ASTNode, FunctionCallNode, FunctionDeclNode},
+        ast::{ASTNode, FunctionCallNode, FunctionDeclNode, ReturnStmtNode},
         errors::SyntaxError,
         symbol_table::{Symbol, SymbolTable, SymbolType},
         token::Kind,
@@ -14,7 +14,7 @@ use crate::{
 use super::Parser;
 
 impl Parser {
-    fn parse_single_param(&mut self) -> Result<(String, Symbol), Vec<SyntaxError>> {
+    fn parse_single_param(&mut self) -> Result<Symbol, Vec<SyntaxError>> {
         trace!("parse single parameter");
         match self.advance().kind {
             Kind::Var => advance_with_expected!(Kind::Identifier, self, {
@@ -22,14 +22,12 @@ impl Parser {
                 advance_with_expected!(Kind::Colon, self, {
                     let ttype = self.parse_type()?;
                     match self.advance().kind {
-                        Kind::Comma | Kind::RightParen => Ok((
-                            id.lexeme,
-                            Symbol {
-                                s_type: SymbolType::VarParam,
-                                r_type: ttype,
-                                position: id.position,
-                            },
-                        )),
+                        Kind::Comma | Kind::RightParen => Ok(Symbol {
+                            name: id.lexeme,
+                            s_type: SymbolType::VarParam,
+                            r_type: ttype,
+                            position: id.position,
+                        }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
                     }
                 })
@@ -39,14 +37,12 @@ impl Parser {
                 advance_with_expected!(Kind::Colon, self, {
                     let ttype = self.parse_type()?;
                     match self.advance().kind {
-                        Kind::Comma | Kind::RightParen => Ok((
-                            id.lexeme,
-                            Symbol {
-                                s_type: SymbolType::Param,
-                                r_type: ttype,
-                                position: id.position,
-                            },
-                        )),
+                        Kind::Comma | Kind::RightParen => Ok(Symbol {
+                            name: id.lexeme,
+                            s_type: SymbolType::Param,
+                            r_type: ttype,
+                            position: id.position,
+                        }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
                     }
                 })
@@ -61,7 +57,7 @@ impl Parser {
         let mut params = SymbolTable::new();
         loop {
             let param = self.parse_single_param()?;
-            params.insert(param.0, param.1);
+            params.push(param);
             if self.matches(Kind::RightParen) {
                 break;
             }
@@ -76,50 +72,38 @@ impl Parser {
         advance_with_expected!(Kind::Identifier, self, {
             let id = self.current.clone();
             advance_with_expected!(Kind::LeftParen, self, {
-                match self.parse_parameters() {
-                    Ok(args) => current_with_expected!(
-                        Kind::RightParen,
-                        self,
-                        advance_with_expected!(Kind::Colon, self, {
-                            let r_type = self.parse_type()?;
-                            advance_with_expected!(
-                                Kind::Semicolon,
-                                self,
-                                advance_with_expected!(Kind::Begin, self, {
-                                    self.context.push(args.clone());
-                                    match self.parse_block() {
-                                        Ok(block) => {
-                                            match self.context.pop() {
-                                                Some(mut ctx) => {
-                                                    ctx.insert(
-                                                        id.lexeme,
-                                                        Symbol {
-                                                            s_type: SymbolType::Function,
-                                                            r_type,
-                                                            position: id.position,
-                                                        },
-                                                    );
-                                                    self.context.push(ctx);
-                                                }
-                                                None => {
-                                                    panic!("Dropped global context while parsing")
-                                                }
-                                            };
-                                            Ok(ASTNode::FunctionDecl(FunctionDeclNode {
-                                                position: self.current.position,
-                                                args,
-                                                block: Box::new(block),
-                                                r_type,
-                                            }))
-                                        }
-                                        Err(errs) => Err(errs),
-                                    }
-                                })
-                            )
-                        })
-                    ),
-                    Err(errs) => Err(errs),
-                }
+                let args = self.parse_parameters()?;
+                current_with_expected!(
+                    Kind::RightParen,
+                    self,
+                    advance_with_expected!(Kind::Colon, self, {
+                        let r_type = self.parse_type()?;
+                        advance_with_expected!(
+                            Kind::Semicolon,
+                            self,
+                            advance_with_expected!(Kind::Begin, self, {
+                                self.context.push(args.clone());
+                                trace!("Parsing function {} block", id.lexeme);
+                                let block = self.parse_block()?;
+                                let mut ctx = self.context.pop().unwrap();
+                                ctx.push(Symbol {
+                                    name: id.lexeme.clone(),
+                                    s_type: SymbolType::Function,
+                                    r_type,
+                                    position: id.position,
+                                });
+                                self.context.push(ctx);
+                                Ok(ASTNode::FunctionDecl(FunctionDeclNode {
+                                    name: id.lexeme,
+                                    position: self.current.position,
+                                    args,
+                                    block: Box::new(block),
+                                    r_type,
+                                }))
+                            })
+                        )
+                    })
+                )
             })
         })
     }
@@ -134,10 +118,10 @@ impl Parser {
                 Kind::Identifier => {
                     let param = self.current.clone();
                     trace!("Single param: {}, {}", param, param.lexeme);
-                    match self.context.last().unwrap().get(&param.lexeme) {
+                    match self.context.last().unwrap().get(param.clone().lexeme) {
                         Some(p) => {
                             trace!("Symbol found!");
-                            params.insert(param.lexeme, *p);
+                            params.push(p);
                             match self.advance().kind {
                                 Kind::Comma => {}
                                 Kind::RightParen => {
@@ -158,10 +142,13 @@ impl Parser {
                             }
                         }
                         None => {
-                            trace!("Symbol {} not found", param.lexeme);
-                            errors.push(self.error_at_current(
-                                format!("use of undeclared variable: {}", param.lexeme).as_str(),
-                            ));
+                            trace!("Symbol {} not found", param.clone().lexeme);
+                            errors.push(
+                                self.error_at_current(
+                                    format!("use of undeclared variable: {}", param.clone().lexeme)
+                                        .as_str(),
+                                ),
+                            );
                         }
                     }
                 }
@@ -192,5 +179,28 @@ impl Parser {
                 }))
             )
         })
+    }
+
+    pub fn parse_return(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
+        let id = self.current.clone();
+        match self.advance().kind {
+            Kind::Semicolon => Ok(ASTNode::ReturnStmt(ReturnStmtNode {
+                token: id,
+                value: None,
+            })),
+            other => {
+                trace!("other token: {}", other);
+                self.go_back();
+                let expr = self.parse_expression()?;
+                current_with_expected!(
+                    Kind::Semicolon,
+                    self,
+                    Ok(ASTNode::ReturnStmt(ReturnStmtNode {
+                        token: id,
+                        value: Some(Box::new(expr))
+                    }))
+                )
+            }
+        }
     }
 }

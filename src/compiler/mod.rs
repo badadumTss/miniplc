@@ -1,4 +1,7 @@
+mod program;
 mod source_control;
+use log::error;
+
 use crate::{
     core::{
         ast::ASTNode,
@@ -38,13 +41,23 @@ impl Compiler {
     }
 
     pub fn compile_ast(&mut self, ast: ASTNode) {
-        todo!()
+        match ast {
+            ASTNode::Program(p) => {
+                self.compile_program(p);
+                self.src_ctrl.gen_source();
+                println!("{}", self.src_ctrl.get_source())
+            }
+            other => error!("Recived an unknown AST as compilation input"),
+        }
     }
 
     pub fn compile(&mut self, source: String) -> Result<(), Vec<SyntaxError>> {
         let mut parser = Parser::new(source);
         match parser.parse() {
-            Ok(ast) => Ok(self.compile_ast(ast)),
+            Ok(ast) => {
+                self.compile_ast(ast);
+                Ok(())
+            }
             Err(errs) => Err(errs),
         }
     }
