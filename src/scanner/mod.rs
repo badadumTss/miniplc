@@ -200,7 +200,7 @@ impl Scanner {
 
         string = string.replace(bs.as_str(), "\\");
 
-        Ok(self.gen_token(Kind::String, string))
+        Ok(self.gen_token(Kind::LitString, string))
     }
 
     /// Recognises any digit sequence with the pattern [0-9]*
@@ -214,7 +214,7 @@ impl Scanner {
             }
         }
         self.go_back();
-        Ok(self.gen_token(Kind::Integer, digit))
+        Ok(self.gen_token(Kind::LitInt, digit))
     }
 
     /// Recognises any one of the listed strings as tokens, if none is
@@ -230,17 +230,20 @@ impl Scanner {
             "end" => Ok(self.gen_token(Kind::End, word)),
             "begin" => Ok(self.gen_token(Kind::Begin, word)),
             "read" => Ok(self.gen_token(Kind::Read, word)),
-            "print" => Ok(self.gen_token(Kind::Print, word)),
+            "writeln" => Ok(self.gen_token(Kind::Print, word)),
             "assert" => Ok(self.gen_token(Kind::Assert, word)),
-            "int" | "string" | "bool" => Ok(self.gen_token(Kind::Type, word)),
+            "int" => Ok(self.gen_token(Kind::TInt, word)),
+            "string" => Ok(self.gen_token(Kind::TString, word)),
+            "bool" => Ok(self.gen_token(Kind::TBool, word)),
             "if" => Ok(self.gen_token(Kind::If, word)),
             "false" => Ok(self.gen_token(Kind::False, word)),
             "true" => Ok(self.gen_token(Kind::True, word)),
             "program" => Ok(self.gen_token(Kind::Program, word)),
             "function" => Ok(self.gen_token(Kind::Function, word)),
             "procedure" => Ok(self.gen_token(Kind::Procedure, word)),
-            "array" => Ok(self.gen_token(Kind::Array, word)),
+            "array" => Ok(self.gen_token(Kind::TArray, word)),
             "of" => Ok(self.gen_token(Kind::Of, word)),
+            "return" => Ok(self.gen_token(Kind::Return, word)),
             _ => Ok(self.gen_token(Kind::Identifier, word)),
         }
     }
@@ -287,6 +290,7 @@ impl Scanner {
                 '&' => Ok(self.gen_token(Kind::And, c.to_string())),
                 '[' => Ok(self.gen_token(Kind::LeftSquare, c.to_string())),
                 ']' => Ok(self.gen_token(Kind::RightSquare, c.to_string())),
+                ',' => Ok(self.gen_token(Kind::Comma, c.to_string())),
 
                 /* 2/1 character tokens */
                 ':' => {

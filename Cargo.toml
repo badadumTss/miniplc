@@ -1,5 +1,5 @@
 [package]
-name = "minipli"
+name = "miniplc"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,7 @@ edition = "2021"
 clap = { version = "3.0.14", features = ["derive"] }
 clap-verbosity-flag = "0.4.1"
 log = "0.4.1"
+
 stderrlog = "0.5.1"
 either = "1.6.1"
 colored = "2.0.0"

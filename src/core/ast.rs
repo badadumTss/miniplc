@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
 use crate::core::token::*;
-use crate::core::variable::Variable;
 use crate::scanner::position::Position;
 
-use super::variable::Type;
+use super::objects::Object;
+use super::symbol_table::SymbolTable;
+use super::types::Type;
 
 #[derive(Clone, Debug)]
 pub enum ASTNode {
@@ -13,6 +14,7 @@ pub enum ASTNode {
     FunctionDecl(FunctionDeclNode),
     ProcedureDecl(ProcedureDeclNode),
     Block(BlockNode),
+
     // Expressions
     BinaryExpression(BinaryExprNode),
     Identifier(IdentifierExprNode),
@@ -29,6 +31,8 @@ pub enum ASTNode {
     PrintStmt(PrintStmtNode),
     ReadStmt(ReadStmtNode),
     AssertStmt(AssertStmtNode),
+    FunctionCallStmt(FunctionCallNode),
+    ProcedureCallStmt(ProcedureCallNode),
 
     // Void node for EOF
     EofStmt(EofNode),
@@ -87,7 +91,7 @@ pub struct IdentifierExprNode {
 #[derive(Clone, Debug)]
 pub struct LiteralExprNode {
     pub position: Position,
-    pub value: Variable,
+    pub value: Object,
     pub actual_type: Type,
 }
 
@@ -159,19 +163,37 @@ pub struct AssertStmtNode {
 #[derive(Clone, Debug)]
 pub struct FunctionDeclNode {
     pub position: Position,
-    pub expr: ExpressionStmtNode,
+    pub args: SymbolTable,
+    pub block: Box<ASTNode>,
+    pub r_type: Type,
+}
+
+#[derive(Clone, Debug)]
+pub struct FunctionCallNode {
+    pub position: Position,
+    pub args: SymbolTable,
+    pub target: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct ProcedureDeclNode {
     pub position: Position,
-    pub expr: ExpressionStmtNode,
+    pub args: SymbolTable,
+    pub block: Box<ASTNode>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProcedureCallNode {
+    pub position: Position,
+    pub args: SymbolTable,
+    pub target: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct BlockNode {
     pub position: Position,
-    pub expr: ExpressionStmtNode,
+    pub context: SymbolTable,
+    pub statements: Box<[ASTNode]>,
 }
 
 #[derive(Clone, Debug)]
@@ -194,7 +216,7 @@ impl Display for ASTNode {
                 position: _,
                 value,
                 actual_type,
-            }) => write!(f, "literal: {} , {}", value.string_value, actual_type),
+            }) => write!(f, "literal: {} , {}", value, actual_type),
             ASTNode::UnaryExpression(_) => write!(f, "unary expression"),
             ASTNode::VarReassignment(_) => write!(f, "var reassignment"),
             ASTNode::VariableDecl(_) => write!(f, "variable declaraion"),
@@ -208,6 +230,8 @@ impl Display for ASTNode {
             ASTNode::ProcedureDecl(_) => write!(f, "procedure"),
             ASTNode::Block(_) => write!(f, "block"),
             ASTNode::ProgramName(_) => write!(f, "program name"),
+            ASTNode::FunctionCallStmt(_) => write!(f, "function call"),
+            ASTNode::ProcedureCallStmt(_) => write!(f, "procedure call"),
         }
     }
 }

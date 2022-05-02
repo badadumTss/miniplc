@@ -38,25 +38,7 @@ impl Compiler {
     }
 
     pub fn compile_ast(&mut self, ast: ASTNode) {
-        match ast {
-            ASTNode::Program(_) => todo!(),
-            ASTNode::BinaryExpression(_) => todo!(),
-            ASTNode::Identifier(_) => todo!(),
-            ASTNode::Literal(_) => todo!(),
-            ASTNode::UnaryExpression(_) => todo!(),
-            ASTNode::VarReassignment(_) => todo!(),
-            ASTNode::VariableDecl(_) => todo!(),
-            ASTNode::ExpressionStmt(_) => todo!(),
-            ASTNode::ForStmt(_) => todo!(),
-            ASTNode::PrintStmt(_) => todo!(),
-            ASTNode::ReadStmt(_) => todo!(),
-            ASTNode::AssertStmt(_) => todo!(),
-            ASTNode::EofStmt(_) => todo!(),
-            ASTNode::FunctionDecl(_) => todo!(),
-            ASTNode::ProcedureDecl(_) => todo!(),
-            ASTNode::Block(_) => todo!(),
-            ASTNode::ProgramName(_) => todo!(),
-        }
+        todo!()
     }
 
     pub fn compile(&mut self, source: String) -> Result<(), Vec<SyntaxError>> {

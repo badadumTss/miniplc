@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::{
     core::{
         ast::{ASTNode, ForStmtNode},
@@ -26,6 +28,7 @@ impl Parser {
     }
 
     fn parse_statements_for(&mut self) -> Result<Vec<ASTNode>, Vec<SyntaxError>> {
+        trace!("parse for statements");
         let mut statements = Vec::new();
         let mut errors: Vec<SyntaxError> = Vec::new();
 
@@ -48,57 +51,75 @@ impl Parser {
     }
 
     pub fn parse_for_loop(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
+        trace!("parse for loop");
         let var_id = self.advance();
         match var_id.kind {
-            Kind::Identifier => match self.context.get(&var_id.lexeme) {
-                Some(_) => match self.advance().kind {
-                    Kind::In => match self.parse_expression() {
-                        Ok(ASTNode::ExpressionStmt(expr_from)) => match self.current.kind {
-                            Kind::Ddot => match self.parse_expression() {
-                                Ok(ASTNode::ExpressionStmt(expr_to)) => match self.current.kind {
-                                    Kind::Do => match self.parse_statements_for() {
-                                        Ok(statements) => match self.advance().kind {
-                                            Kind::Semicolon => Ok(ASTNode::ForStmt(ForStmtNode {
-                                                position: self.current.position,
-                                                increment: var_id,
-                                                range_start: Box::new(expr_from),
-                                                range_end: Box::new(expr_to),
-                                                statements: statements.into_boxed_slice(),
-                                            })),
+            Kind::Identifier => match self.context.last() {
+                Some(table) => match table.get(&var_id.lexeme) {
+                    Some(_) => match self.advance().kind {
+                        Kind::In => match self.parse_expression() {
+                            Ok(ASTNode::ExpressionStmt(expr_from)) => match self.current.kind {
+                                Kind::Ddot => match self.parse_expression() {
+                                    Ok(ASTNode::ExpressionStmt(expr_to)) => {
+                                        match self.current.kind {
+                                            Kind::Do => match self.parse_statements_for() {
+                                                Ok(statements) => match self.advance().kind {
+                                                    Kind::Semicolon => {
+                                                        Ok(ASTNode::ForStmt(ForStmtNode {
+                                                            position: self.current.position,
+                                                            increment: var_id,
+                                                            range_start: Box::new(expr_from),
+                                                            range_end: Box::new(expr_to),
+                                                            statements: statements
+                                                                .into_boxed_slice(),
+                                                        }))
+                                                    }
+                                                    other => Err(self.unexpected_token_err(
+                                                        Kind::Semicolon,
+                                                        other,
+                                                    )),
+                                                },
+                                                Err(e) => Err(e),
+                                            },
                                             other => {
-                                                Err(self
-                                                    .unexpected_token_err(Kind::Semicolon, other))
+                                                Err(self.unexpected_token_err(Kind::Do, other))
                                             }
-                                        },
-                                        Err(e) => Err(e),
-                                    },
-                                    other => Err(self.unexpected_token_err(Kind::Do, other)),
+                                        }
+                                    }
+                                    Ok(other) => Err(vec![SyntaxError {
+                                        description: format!(
+                                            "Expected expression, found {}",
+                                            other
+                                        ),
+                                        position: self.previous.position,
+                                        raw_line: self.scanner.curr_line(),
+                                    }]),
+                                    Err(synerr) => Err(synerr),
                                 },
-                                Ok(other) => Err(vec![SyntaxError {
-                                    description: format!("Expected expression, found {}", other),
-                                    position: self.previous.position,
-                                    raw_line: self.scanner.curr_line(),
-                                }]),
-                                Err(synerr) => Err(synerr),
+                                other => Err(self.unexpected_token_err(Kind::Ddot, other)),
                             },
-                            other => Err(self.unexpected_token_err(Kind::Ddot, other)),
+                            Ok(other) => Err(vec![SyntaxError {
+                                description: format!("Expected expression, found {}", other),
+                                position: self.previous.position,
+                                raw_line: self.scanner.curr_line(),
+                            }]),
+                            Err(synerr) => Err(synerr),
                         },
-                        Ok(other) => Err(vec![SyntaxError {
-                            description: format!("Expected expression, found {}", other),
-                            position: self.previous.position,
-                            raw_line: self.scanner.curr_line(),
-                        }]),
-                        Err(synerr) => Err(synerr),
+                        other => Err(self.unexpected_token_err(Kind::In, other)),
                     },
-                    other => Err(self.unexpected_token_err(Kind::In, other)),
+                    None => Err(vec![SyntaxError::new(
+                        var_id.clone().position,
+                        self.scanner.curr_line(),
+                        format!(
+                            "Use of undeclared variable {} as for loop incrementer",
+                            var_id.clone().lexeme
+                        ),
+                    )]),
                 },
                 None => Err(vec![SyntaxError::new(
-                    var_id.clone().position,
+                    self.current.position,
                     self.scanner.curr_line(),
-                    format!(
-                        "Use of undeclared variable {} as for loop incrementer",
-                        var_id.clone().lexeme
-                    ),
+                    "Found for loop in global scope".to_string(),
                 )]),
             },
             other => Err(self.unexpected_token_err(Kind::Identifier, other)),

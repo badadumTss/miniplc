@@ -1,22 +1,26 @@
 mod assert;
+mod block;
 mod expressions;
 mod for_loop;
+mod function;
+mod main;
 mod print;
+mod procedure;
 mod read;
 mod statements;
-mod function;
-mod procedure;
-mod block;
+mod symbol;
+mod types;
 mod var_assignment;
 mod var_declaration;
+
 use std::collections::HashMap;
 
 use log::trace;
 
 use crate::core::ast::*;
 use crate::core::errors::SyntaxError;
+use crate::core::symbol_table::SymbolTable;
 use crate::core::token::{Kind, Token};
-use crate::core::variable::Type;
 use crate::scanner::position::Position;
 use crate::scanner::Scanner;
 
@@ -28,7 +32,27 @@ pub struct Parser {
     next: Option<Token>,
     // panic: bool,
     syntax_errors: Vec<SyntaxError>,
-    context: HashMap<String, (Type, Position)>,
+    context: Vec<SymbolTable>,
+}
+
+#[macro_export]
+macro_rules! advance_with_expected {
+    ($expected:path, $compiler:expr, $if_ok:expr) => {
+        match $compiler.advance().kind {
+            $expected => $if_ok,
+            other => Err($compiler.unexpected_token_err($expected, other)),
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! current_with_expected {
+    ($expected:path, $compiler:expr, $if_ok:expr) => {
+        match $compiler.current.kind {
+            $expected => $if_ok,
+            other => Err($compiler.unexpected_token_err($expected, other)),
+        }
+    };
 }
 
 impl Parser {
@@ -46,9 +70,10 @@ impl Parser {
                 position: Position::new(0, 0, 0),
             },
             next: None,
-            // panic: false,
             syntax_errors: vec![],
-            context: HashMap::new(),
+            context: vec![SymbolTable {
+                symbols: HashMap::new(),
+            }],
         }
     }
 
@@ -58,12 +83,13 @@ impl Parser {
     /// interpreter can then take the result and start interpreting it
     /// via the visitor pattern
     pub fn parse(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
+        trace!("Main parse function");
         let mut program_name: Option<ProgramNameNode> = None;
         let mut procedures: Vec<ProcedureDeclNode> = Vec::new();
         let mut functions: Vec<FunctionDeclNode> = Vec::new();
         let mut main_block: Option<BlockNode> = None;
         while !self.is_at_end() {
-            match self.parse_statement() {
+            match self.parse_global_statement() {
                 Ok(ASTNode::ProgramName(node)) => program_name = Some(node),
                 Ok(ASTNode::ProcedureDecl(node)) => procedures.push(node),
                 Ok(ASTNode::FunctionDecl(node)) => functions.push(node),
@@ -124,7 +150,7 @@ impl Parser {
 
     /// Advances by one the tokens via the scanner function
     pub fn advance(&mut self) -> Token {
-        trace!("{:?}", self.current);
+        // trace!("{:?}", self.current);
         self.previous = self.current.clone();
         if let Some(reff) = self.next.clone() {
             self.current = reff;
@@ -136,7 +162,7 @@ impl Parser {
                 /* Doesn't stop until it finds a valid token, and
                  * next_token eventually returns a valid token (Eof as
                  * last thing) */
-                Err(e) => self.error_at_current(e),
+                Err(e) => self.push_error(e),
                 Ok(token) => self.current = token.clone(),
             };
         }
@@ -150,7 +176,16 @@ impl Parser {
     }
 
     /// Utility function to push an error to the error stack
-    pub fn error_at_current(&mut self, error: &SyntaxError) {
+    pub fn push_error(&mut self, error: &SyntaxError) {
         self.syntax_errors.push(error.clone());
+    }
+
+    /// Utility to return an error associated to the current token
+    pub fn error_at_current(&self, msg: &str) -> SyntaxError {
+        SyntaxError::new(
+            self.current.position,
+            self.scanner.curr_line(),
+            msg.to_string(),
+        )
     }
 }

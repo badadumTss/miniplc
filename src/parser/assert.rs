@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::{
     core::{
         ast::{ASTNode, AssertStmtNode, ExpressionStmtNode},
@@ -9,6 +11,7 @@ use crate::{
 
 impl Parser {
     pub fn parse_assert(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
+        trace!("parse assert");
         match self.advance().kind {
             Kind::LeftParen => match self.parse_expression() {
                 Ok(expr) => match self.current.kind {

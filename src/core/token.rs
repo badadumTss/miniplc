@@ -16,6 +16,7 @@ pub enum Kind {
     Star,        // *
     Bang,        // !
     And,         // &
+    Comma,       // ,
 
     // One or two character tokens.
     Equal,        // =
@@ -29,12 +30,14 @@ pub enum Kind {
 
     // Literals.
     Identifier, // Var Id
-    String,     // "String"
-    Integer,    // 1
+    LitString,  // "String"
+    LitInt,     // 1
 
     //Types
-    Type,  // String | Int | Bool
-    Array, // Array initialization word
+    TString, // string
+    TInt,    // int
+    TBool,   // bool
+    TArray,  // array
 
     // Keywords.
     False,     // false
@@ -53,6 +56,7 @@ pub enum Kind {
     Function,  // function
     Procedure, // procedure
     Of,        // array [<int>] *of* int
+    Return,    // return value
 
     // End Of Files And Whitespaces
     Eof,     // End of File
@@ -101,10 +105,14 @@ impl fmt::Display for Kind {
                 Kind::Less => "<",
                 Kind::LessEqual => "<=",
                 Kind::Ddot => "..",
+                Kind::Comma => ",",
                 Kind::Identifier => "Identifier",
-                Kind::String => "\"String\"",
-                Kind::Integer => "integer",
-                Kind::Type => "int | string | bool",
+                Kind::LitString => "\"String\"",
+                Kind::LitInt => "int",
+                Kind::TString => "string",
+                Kind::TInt => "int",
+                Kind::TBool => "bool",
+                Kind::TArray => "array",
                 Kind::False => "false",
                 Kind::For => "for",
                 Kind::If => "if",
@@ -125,8 +133,8 @@ impl fmt::Display for Kind {
                 Kind::Program => "Program",
                 Kind::Function => "function",
                 Kind::Procedure => "procedure",
-                Kind::Array => "array",
                 Kind::Of => "of",
+                Kind::Return => "return",
             }
         )
     }
