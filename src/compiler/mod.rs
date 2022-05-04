@@ -1,3 +1,6 @@
+mod block;
+mod funcions;
+mod procedures;
 mod program;
 mod source_control;
 use log::error;
@@ -47,7 +50,7 @@ impl Compiler {
                 self.src_ctrl.gen_source();
                 println!("{}", self.src_ctrl.get_source())
             }
-            other => error!("Recived an unknown AST as compilation input"),
+            _ => error!("Recived an unknown AST as compilation input"),
         }
     }
 

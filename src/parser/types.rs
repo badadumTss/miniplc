@@ -10,15 +10,18 @@ impl Parser {
     fn parse_array_type(&mut self) -> Result<Type, Vec<SyntaxError>> {
         trace!("parsing type array");
         advance_with_expected!(
-            Kind::RightSquare,
+            Kind::LeftSquare,
             self,
             advance_with_expected!(
                 Kind::LitInt,
                 self,
                 advance_with_expected!(
-                    Kind::LeftSquare,
+                    Kind::RightSquare,
                     self,
-                    advance_with_expected!(Kind::Of, self, self.parse_type())
+                    advance_with_expected!(Kind::Of, self, {
+                        let internal = self.parse_type()?.internal();
+                        Ok(Type::Array(internal))
+                    })
                 )
             )
         )

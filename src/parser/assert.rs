@@ -2,7 +2,7 @@ use log::trace;
 
 use crate::{
     core::{
-        ast::{ASTNode, AssertStmtNode, ExpressionStmtNode},
+        ast::{ASTNode, AssertStmtNode},
         errors::SyntaxError,
         token::Kind,
     },
@@ -18,10 +18,7 @@ impl Parser {
                     Kind::RightParen => match self.advance().kind {
                         Kind::Semicolon => Ok(ASTNode::AssertStmt(AssertStmtNode {
                             position: self.current.position,
-                            expr: ExpressionStmtNode {
-                                position: self.current.position,
-                                child: Box::new(expr),
-                            },
+                            expr: Box::new(expr),
                         })),
                         other => Err(self.unexpected_token_err(Kind::Semicolon, other)),
                     },

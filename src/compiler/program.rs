@@ -22,7 +22,7 @@ impl Compiler {
 
     pub fn push_function_sign(&mut self, node: FunctionDeclNode) {
         self.src_ctrl.push_instruction(format!(
-            "{} {}({});\n\t",
+            "{} {}({});",
             node.r_type,
             node.name,
             self.get_args(node.args)
@@ -31,7 +31,7 @@ impl Compiler {
 
     pub fn push_procedure_sign(&mut self, node: ProcedureDeclNode) {
         self.src_ctrl.push_instruction(format!(
-            "void {}({});\n\t",
+            "void {}({});",
             node.name,
             self.get_args(node.args)
         ));
@@ -45,5 +45,15 @@ impl Compiler {
         for p in node.procedures.iter() {
             self.push_procedure_sign(p.clone());
         }
+
+        for f in node.functions.iter() {
+            self.compile_function(f.clone());
+        }
+
+        for p in node.procedures.iter() {
+            self.compile_procedure(p.clone());
+        }
+
+        self.compile_block(node.main_block);
     }
 }

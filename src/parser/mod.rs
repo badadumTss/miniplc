@@ -1,7 +1,7 @@
+mod array;
 mod assert;
 mod block;
 mod expressions;
-mod for_loop;
 mod function;
 mod main;
 mod print;
@@ -12,12 +12,13 @@ mod symbol;
 mod types;
 mod var_assignment;
 mod var_declaration;
+mod while_loop;
 
 use log::trace;
 
 use crate::core::ast::*;
 use crate::core::errors::SyntaxError;
-use crate::core::symbol_table::SymbolTable;
+use crate::core::symbol_table::{Symbol, SymbolTable};
 use crate::core::token::{Kind, Token};
 use crate::scanner::position::Position;
 use crate::scanner::Scanner;
@@ -183,5 +184,14 @@ impl Parser {
             self.scanner.curr_line(),
             msg.to_string(),
         )
+    }
+
+    pub fn get_symbol(&self, s_name: String) -> Option<Symbol> {
+        for table in self.context.iter().rev() {
+            if let Some(f) = table.get(s_name.clone()) {
+                return Some(f);
+            }
+        }
+        None
     }
 }

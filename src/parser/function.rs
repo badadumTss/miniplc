@@ -7,6 +7,7 @@ use crate::{
         errors::SyntaxError,
         symbol_table::{Symbol, SymbolTable, SymbolType},
         token::Kind,
+        types::Type,
     },
     current_with_expected,
 };
@@ -20,12 +21,16 @@ impl Parser {
             Kind::Var => advance_with_expected!(Kind::Identifier, self, {
                 let id = self.current.clone();
                 advance_with_expected!(Kind::Colon, self, {
-                    let ttype = self.parse_type()?;
+                    let r_type = self.parse_type()?;
+                    trace!("found type: {}", r_type);
                     match self.advance().kind {
                         Kind::Comma | Kind::RightParen => Ok(Symbol {
                             name: id.lexeme,
-                            s_type: SymbolType::VarParam,
-                            r_type: ttype,
+                            s_type: match r_type {
+                                Type::Simple(_) => SymbolType::VarParam,
+                                Type::Array(_) => SymbolType::Arr,
+                            },
+                            r_type,
                             position: id.position,
                         }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
@@ -35,19 +40,21 @@ impl Parser {
             Kind::Identifier => {
                 let id = self.current.clone();
                 advance_with_expected!(Kind::Colon, self, {
-                    let ttype = self.parse_type()?;
+                    let r_type = self.parse_type()?;
                     match self.advance().kind {
                         Kind::Comma | Kind::RightParen => Ok(Symbol {
                             name: id.lexeme,
                             s_type: SymbolType::Param,
-                            r_type: ttype,
+                            r_type,
                             position: id.position,
                         }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
                     }
                 })
             }
-            other => Err(self.unexpected_token_err(Kind::Identifier, other)),
+            other => Err(vec![self.error_at_current(
+                format!("Expected a param declaration, found {}", other).as_str(),
+            )]),
         }
     }
     /// Proveate function to parse parameters in a function/procedure
@@ -166,19 +173,33 @@ impl Parser {
     pub fn parse_function_call(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
         trace!("parsing function call");
         let f_name = self.current.clone();
-        advance_with_expected!(Kind::LeftParen, self, {
-            let params = self.parse_call_parameters()?;
-            trace!("Returned, current token: {}", self.current.clone());
-            current_with_expected!(
-                Kind::RightParen,
-                self,
-                Ok(ASTNode::FunctionCallStmt(FunctionCallNode {
-                    position: f_name.position,
-                    args: params,
-                    target: f_name.lexeme,
-                }))
-            )
-        })
+        let f_exists = self.get_symbol(f_name.lexeme.clone());
+        match f_exists {
+            Some(f_sym) => {
+                if f_sym.s_type == SymbolType::Function {
+                    advance_with_expected!(Kind::LeftParen, self, {
+                        let params = self.parse_call_parameters()?;
+                        current_with_expected!(
+                            Kind::RightParen,
+                            self,
+                            Ok(ASTNode::FunctionCallStmt(FunctionCallNode {
+                                position: f_name.position,
+                                args: params,
+                                target: f_name.lexeme,
+                                r_type: f_sym.r_type
+                            }))
+                        )
+                    })
+                } else {
+                    Err(vec![self.error_at_current(
+                        format!("{} exists, but is not a function", f_name.lexeme).as_str(),
+                    )])
+                }
+            }
+            None => Err(vec![self.error_at_current(
+                format!("Unknown function \"{}\"", f_name.lexeme).as_str(),
+            )]),
+        }
     }
 
     pub fn parse_return(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {

@@ -41,7 +41,6 @@ pub enum Kind {
 
     // Keywords.
     False,     // false
-    For,       // for
     If,        // if
     Print,     // print
     Read,      // read
@@ -57,6 +56,7 @@ pub enum Kind {
     Procedure, // procedure
     Of,        // array [<int>] *of* int
     Return,    // return value
+    While,     // While (expr) do; block
 
     // End Of Files And Whitespaces
     Eof,     // End of File
@@ -108,13 +108,12 @@ impl fmt::Display for Kind {
                 Kind::Comma => ",",
                 Kind::Identifier => "Identifier",
                 Kind::LitString => "\"String\"",
-                Kind::LitInt => "int",
-                Kind::TString => "string",
-                Kind::TInt => "int",
-                Kind::TBool => "bool",
+                Kind::LitInt => "literal int",
+                Kind::TString => "literal string",
+                Kind::TInt => "type int",
+                Kind::TBool => "type bool",
                 Kind::TArray => "array",
                 Kind::False => "false",
-                Kind::For => "for",
                 Kind::If => "if",
                 Kind::Print => "print",
                 Kind::Read => "read",
@@ -135,6 +134,7 @@ impl fmt::Display for Kind {
                 Kind::Procedure => "procedure",
                 Kind::Of => "of",
                 Kind::Return => "return",
+                Kind::While => "while",
             }
         )
     }

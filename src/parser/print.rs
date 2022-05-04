@@ -3,7 +3,7 @@ use log::trace;
 use crate::{
     advance_with_expected,
     core::{
-        ast::{ASTNode, ExpressionStmtNode, PrintStmtNode},
+        ast::{ASTNode, PrintStmtNode},
         errors::SyntaxError,
         token::Kind,
     },
@@ -15,7 +15,7 @@ impl Parser {
     /// Parses a print statement returning the corresponding ASTNode
     pub fn parse_print(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
         trace!("Parsing print statement");
-        let pos = self.current.clone().position;
+        let position = self.current.clone().position;
         advance_with_expected!(Kind::LeftParen, self, {
             let expr = self.parse_expression()?;
             current_with_expected!(
@@ -25,11 +25,8 @@ impl Parser {
                     Kind::Semicolon,
                     self,
                     Ok(ASTNode::PrintStmt(PrintStmtNode {
-                        to_print: ExpressionStmtNode {
-                            position: self.previous.position,
-                            child: Box::new(expr),
-                        },
-                        position: pos,
+                        to_print: Box::new(expr),
+                        position,
                     }))
                 )
             )

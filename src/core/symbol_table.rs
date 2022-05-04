@@ -4,13 +4,14 @@ use crate::scanner::position::Position;
 
 use super::types::Type;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum SymbolType {
     Function,
     Procedure,
     Var,
     VarParam,
     Param,
+    Arr,
 }
 
 #[derive(Clone, Debug)]

@@ -5,7 +5,7 @@ use crate::scanner::position::Position;
 
 use super::objects::Object;
 use super::symbol_table::SymbolTable;
-use super::types::Type;
+use super::types::{SimpleType, Type};
 
 #[derive(Clone, Debug)]
 pub enum ASTNode {
@@ -17,7 +17,8 @@ pub enum ASTNode {
 
     // Expressions
     BinaryExpression(BinaryExprNode),
-    Identifier(IdentifierExprNode),
+    VarName(VariableNameExpressionNode),
+    ArrayRef(ArrayRefExpr),
     Literal(LiteralExprNode),
     UnaryExpression(UnaryExprNode),
     VarReassignment(VarReassignmentExprNode),
@@ -26,8 +27,7 @@ pub enum ASTNode {
     VariableDecl(VariableDeclNode),
 
     // Statements
-    ExpressionStmt(ExpressionStmtNode),
-    ForStmt(ForStmtNode),
+    WhileStmt(WhileStmtNode),
     PrintStmt(PrintStmtNode),
     ReadStmt(ReadStmtNode),
     AssertStmt(AssertStmtNode),
@@ -37,6 +37,36 @@ pub enum ASTNode {
 
     // Void node for EOF
     EofStmt(EofNode),
+}
+
+impl ASTNode {
+    pub fn r_type(&self) -> Type {
+        match self {
+            ASTNode::Program(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ProgramName(_) => Type::Simple(SimpleType::Void),
+            ASTNode::FunctionDecl(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ProcedureDecl(_) => Type::Simple(SimpleType::Void),
+            ASTNode::Block(_) => Type::Simple(SimpleType::Void),
+            ASTNode::BinaryExpression(e) => e.r_type,
+            ASTNode::VarName(i) => i.r_type,
+            ASTNode::Literal(l) => l.r_type,
+            ASTNode::UnaryExpression(u) => u.r_type,
+            ASTNode::VarReassignment(_) => Type::Simple(SimpleType::Void),
+            ASTNode::VariableDecl(_) => Type::Simple(SimpleType::Void),
+            ASTNode::PrintStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ReadStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::AssertStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::FunctionCallStmt(f) => f.r_type,
+            ASTNode::ProcedureCallStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ReturnStmt(r) => match r.clone().value {
+                Some(v) => v.r_type(),
+                None => Type::Simple(SimpleType::Void),
+            },
+            ASTNode::EofStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::WhileStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ArrayRef(a) => a.r_type,
+        }
+    }
 }
 
 /// Node that rapresent a whole program, each statement is an ASTNode
@@ -57,6 +87,7 @@ pub struct BinaryExprNode {
     pub op: Token,
     pub op_type: BinaryExprType,
     pub right: Box<ASTNode>,
+    pub r_type: Type,
 }
 
 /// Binary expression type, to know what to do with a binary
@@ -83,9 +114,19 @@ impl Display for BinaryExprType {
 
 /// Node to rapresent an Identifier
 #[derive(Clone, Debug)]
-pub struct IdentifierExprNode {
+pub struct VariableNameExpressionNode {
     pub position: Position,
     pub id: Token,
+    pub r_type: Type,
+}
+
+/// Node to rapresent a reference to an array
+#[derive(Clone, Debug)]
+pub struct ArrayRefExpr {
+    pub position: Position,
+    pub array: Token,
+    pub index: Box<ASTNode>,
+    pub r_type: Type,
 }
 
 /// Node to rapresent a literal
@@ -93,7 +134,7 @@ pub struct IdentifierExprNode {
 pub struct LiteralExprNode {
     pub position: Position,
     pub value: Object,
-    pub actual_type: Type,
+    pub r_type: Type,
 }
 
 /// Node to rapresent a unary expression (Namely !<expression>)
@@ -102,6 +143,7 @@ pub struct UnaryExprNode {
     pub position: Position,
     pub operand: Token,
     pub expression: Box<ASTNode>,
+    pub r_type: Type,
 }
 
 /// Node that rapresent a statement to declare a variable
@@ -120,16 +162,15 @@ pub struct VariableDeclNode {
 pub struct ExpressionStmtNode {
     pub position: Position,
     pub child: Box<ASTNode>,
+    pub r_type: Type,
 }
 
-/// Node to rapresent a for statement
+/// Node to rapresent a while statement
 #[derive(Clone, Debug)]
-pub struct ForStmtNode {
+pub struct WhileStmtNode {
     pub position: Position,
-    pub increment: Token,
-    pub range_start: Box<ExpressionStmtNode>,
-    pub range_end: Box<ExpressionStmtNode>,
-    pub statements: Box<[ASTNode]>,
+    pub guard: Box<ASTNode>,
+    pub block: Box<ASTNode>,
 }
 
 /// Node to rapresent a read statement
@@ -143,14 +184,14 @@ pub struct ReadStmtNode {
 #[derive(Clone, Debug)]
 pub struct VarReassignmentExprNode {
     pub position: Position,
-    pub variable_to_reassign: Token,
-    pub new_value: ExpressionStmtNode,
+    pub variable_to_reassign: Box<ASTNode>,
+    pub new_value: Box<ASTNode>,
 }
 
 /// Node to rapresent a print statement
 #[derive(Clone, Debug)]
 pub struct PrintStmtNode {
-    pub to_print: ExpressionStmtNode,
+    pub to_print: Box<ASTNode>,
     pub position: Position,
 }
 
@@ -158,7 +199,7 @@ pub struct PrintStmtNode {
 #[derive(Clone, Debug)]
 pub struct AssertStmtNode {
     pub position: Position,
-    pub expr: ExpressionStmtNode,
+    pub expr: Box<ASTNode>,
 }
 
 #[derive(Clone, Debug)]
@@ -175,6 +216,7 @@ pub struct FunctionCallNode {
     pub position: Position,
     pub args: SymbolTable,
     pub target: String,
+    pub r_type: Type,
 }
 
 #[derive(Clone, Debug)]
@@ -224,17 +266,15 @@ impl Display for ASTNode {
                 node.program_name, node.functions, node.procedures, node.main_block
             ),
             ASTNode::BinaryExpression(_) => write!(f, "binary expression"),
-            ASTNode::Identifier(_) => write!(f, "identifier"),
+            ASTNode::VarName(_) => write!(f, "identifier"),
             ASTNode::Literal(LiteralExprNode {
                 position: _,
                 value,
-                actual_type,
+                r_type: actual_type,
             }) => write!(f, "literal: {} , {}", value, actual_type),
             ASTNode::UnaryExpression(_) => write!(f, "unary expression"),
             ASTNode::VarReassignment(_) => write!(f, "var reassignment"),
             ASTNode::VariableDecl(_) => write!(f, "variable declaraion"),
-            ASTNode::ExpressionStmt(_) => write!(f, "expression"),
-            ASTNode::ForStmt(_) => write!(f, "for loop"),
             ASTNode::PrintStmt(_) => write!(f, "print"),
             ASTNode::ReadStmt(_) => write!(f, "read"),
             ASTNode::AssertStmt(_) => write!(f, "assert"),
@@ -246,6 +286,8 @@ impl Display for ASTNode {
             ASTNode::FunctionCallStmt(_) => write!(f, "function call"),
             ASTNode::ProcedureCallStmt(_) => write!(f, "procedure call"),
             ASTNode::ReturnStmt(_) => write!(f, "return statement"),
+            ASTNode::WhileStmt(_) => write!(f, "while loop"),
+            ASTNode::ArrayRef(_) => write!(f, "array reference"),
         }
     }
 }

@@ -31,6 +31,7 @@ impl Parser {
                         errors.push(err);
                     }
                     self.syncronize();
+                    trace!("New current: {}", self.current);
                 }
             }
             self.advance();

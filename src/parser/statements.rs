@@ -2,6 +2,7 @@ use log::trace;
 
 use crate::advance_with_expected;
 use crate::core::ast::{EofNode, ProgramNameNode};
+use crate::core::symbol_table::{SymbolTable, SymbolType};
 use crate::core::{ast::ASTNode, errors::SyntaxError, token::Kind};
 use crate::parser::Parser;
 
@@ -24,7 +25,12 @@ impl Parser {
         match self.advance().kind {
             Kind::Function => self.parse_function(),
             Kind::Procedure => self.parse_procedure(),
-            Kind::Begin => self.parse_main_block(),
+            Kind::Begin => {
+                self.context.push(SymbolTable::new());
+                let block = self.parse_main_block()?;
+                self.context.pop();
+                Ok(block)
+            }
             Kind::Program => self.parse_program_name(),
             Kind::Eof => Ok(ASTNode::EofStmt(EofNode {
                 eof: self.current.clone(),
@@ -47,12 +53,24 @@ impl Parser {
         trace!("parsing statement");
         match self.advance().kind {
             Kind::Var => self.parse_var_declaration(),
-            Kind::Identifier => self.parse_symbol(),
-            Kind::For => self.parse_for_loop(),
+            Kind::Identifier => match self.get_symbol(self.current.lexeme.clone()) {
+                Some(s) => match s.s_type {
+                    SymbolType::Function => {
+                        let node = self.parse_function_call()?;
+                        advance_with_expected!(Kind::Semicolon, self, Ok(node))
+                    }
+                    SymbolType::Procedure => self.parse_procedure_call(),
+                    _ => self.parse_var_assignment(),
+                },
+                None => Err(vec![self.error_at_current(
+                    format!("Symbol not found: {}", self.current.lexeme).as_str(),
+                )]),
+            },
             Kind::Read => self.parse_read(),
             Kind::Print => self.parse_print(),
             Kind::Assert => self.parse_assert(),
             Kind::Return => self.parse_return(),
+            Kind::While => self.parse_while_loop(),
             other => Err(vec![
                 self.error_at_current(&format!("Unexpected token: {}", other))
             ]),

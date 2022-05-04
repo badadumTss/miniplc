@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SimpleType {
     Int,
     String,
@@ -23,7 +23,7 @@ impl Display for SimpleType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Type {
     Simple(SimpleType),
     Array(SimpleType),
@@ -34,6 +34,15 @@ impl Display for Type {
         match self {
             Type::Simple(t) => write!(f, "{}", t),
             Type::Array(a) => write!(f, "array of {}", a),
+        }
+    }
+}
+
+impl Type {
+    pub fn internal(&self) -> SimpleType {
+        match self {
+            Type::Simple(s) => s.clone(),
+            Type::Array(s) => s.clone(),
         }
     }
 }

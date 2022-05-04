@@ -14,10 +14,10 @@ impl Parser {
     fn declare_variable(
         &mut self,
         lexeme: String,
-        ttype: Type,
+        r_type: Type,
         position: Position,
     ) -> Result<(), Vec<SyntaxError>> {
-        trace!("declaring variable {} of type {}", lexeme, ttype);
+        trace!("declaring variable {} of type {}", lexeme, r_type);
         match self.context.pop() {
             Some(mut table) => match table.get(lexeme.clone()) {
                 Some(v) => Err(vec![self.error_at_current(
@@ -29,9 +29,12 @@ impl Parser {
                 )]),
                 None => {
                     table.push(Symbol {
-                        name: lexeme.clone(),
-                        s_type: SymbolType::Var,
-                        r_type: ttype,
+                        name: lexeme,
+                        s_type: match r_type {
+                            Type::Array(_) => SymbolType::Arr,
+                            Type::Simple(_) => SymbolType::Var,
+                        },
+                        r_type,
                         position,
                     });
                     self.context.push(table);

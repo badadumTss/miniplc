@@ -101,23 +101,6 @@ impl Scanner {
         }
     }
 
-    /// generates a token for the next line comment, recognises the
-    /// regex //[^'\n']\n
-    fn line_comment(&mut self) -> Result<Token, SyntaxError> {
-        let mut comment = String::new();
-        comment.push(self.get_current().unwrap()); // \/ that triggered the function
-        while let Some(c) = self.advance() {
-            match c {
-                '\n' => {
-                    self.go_back();
-                    break;
-                }
-                c => comment.push(c),
-            }
-        }
-        Ok(self.gen_token(Kind::Comment, comment.to_string()))
-    }
-
     /// Generates a token for a block comment in the source comment,
     /// recognises the regex /\*(?\*/)*\*/, with the unix regex
     /// specification this means any string that starts with /*,
@@ -224,7 +207,6 @@ impl Scanner {
     fn find_word(&mut self, word: String) -> Result<Token, SyntaxError> {
         match word.as_str() {
             "var" => Ok(self.gen_token(Kind::Var, word)),
-            "for" => Ok(self.gen_token(Kind::For, word)),
             "in" => Ok(self.gen_token(Kind::In, word)),
             "do" => Ok(self.gen_token(Kind::Do, word)),
             "end" => Ok(self.gen_token(Kind::End, word)),
@@ -244,6 +226,7 @@ impl Scanner {
             "array" => Ok(self.gen_token(Kind::TArray, word)),
             "of" => Ok(self.gen_token(Kind::Of, word)),
             "return" => Ok(self.gen_token(Kind::Return, word)),
+            "while" => Ok(self.gen_token(Kind::While, word)),
             _ => Ok(self.gen_token(Kind::Identifier, word)),
         }
     }
@@ -291,6 +274,7 @@ impl Scanner {
                 '[' => Ok(self.gen_token(Kind::LeftSquare, c.to_string())),
                 ']' => Ok(self.gen_token(Kind::RightSquare, c.to_string())),
                 ',' => Ok(self.gen_token(Kind::Comma, c.to_string())),
+                '/' => Ok(self.gen_token(Kind::Slash, c.to_string())),
 
                 /* 2/1 character tokens */
                 ':' => {
@@ -370,7 +354,7 @@ impl Scanner {
                     None => Err(SyntaxError::new(
                         self.position(),
                         self.curr_line(),
-                        format!("Unexpected End Of File wile reading the source"),
+                        "Unexpected End Of File wile reading the source".to_string(),
                     )),
                 },
 
