@@ -7,7 +7,7 @@
 #+LATEX_HEADER_EXTRA: \newcommand{\lit}[1]{\ensuremath{\mbox{\texttt{'#1'} }}}
 * Overview
   This MiniPL interpreter respects the language definition posted in
-  [[https://moodle.helsinki.fi/pluginfile.php/4052753/mod_resource/content/1/MiniPL.pdf][the MiniPL specification]] document. The language chosen to implement
+  [[https://moodle.helsinki.fi/pluginfile.php/4147595/mod_resource/content/1/MiniPL.pdf][the MiniPL specification]] document. The language chosen to implement
   it is =rust=. The choice of this language had both advantages and
   disadvantages, but they were both considered when making the
   decision for which language to adopt. The main drawback is that the
@@ -39,11 +39,6 @@
      #+BEGIN_SRC sh
        cargo test
      #+END_SRC
-   - Test coverage can be collected using [[https://github.com/xd009642/tarpaulin][tarpaulin]], once installed
-     the coverage result can be generated using
-     #+BEGIN_SRC sh
-       cargo tarpaulin -o Html
-     #+END_SRC
 ** This documentation
    Will probably look a bit quirky on GitHub. It was generated thanks
    to [[https://orgmode.org/][org-mode]] unicorns and can be transpiled in latex with
@@ -67,13 +62,14 @@
     AST for the program being read. Since the language is pretty
     simple and there are no performance constraints on the project,
     the result of the parser operations (an ~ASTNode~ containing the
-    whole program in a tree structure) is directly interpreted by the
-    =interpreter=
-  - the =interpreter= :: module exposes some functions to allow to run
-    a file or a single line of code. It translates the input in an
-    ~ASTNode~ trough the parser and then launches ~eval()~ on it,
-    returning errors if there were during the execution, or returning
-    the result of the program.
+    whole program in a tree structure)
+  - the =compiler= :: module allows for transpilation to =C= code. The
+    choice of transpiling to =C= was made due to time constraints, and
+    because it is a valid target language. The contraints of the
+    projects however do not allow for =while= statements, =for=
+    statements and generally high level functionalities of the
+    language. This means that loops in general have to handled by
+    low-level =goto= statements and labelling of semantic structures.
 
 ** Token recognition
    The token recognition is done in the =scanner= module. The scanner
@@ -163,8 +159,6 @@
    |--------------+-------------------------------------------|
    | LessEqual    | '<='                                      |
    |--------------+-------------------------------------------|
-   | Ddot         | \.\.                                      |
-   |--------------+-------------------------------------------|
    | Identifier   | \w*                                       |
    |--------------+-------------------------------------------|
    | String       | \"[^\"]*\"                                |
@@ -250,7 +244,7 @@
 
 	 /* ...  Many more node types, one for each item in the grammar
 	  ,* ... */
-    
+
 	 ReadStmt(ReadStmtNode),
 	 AssertStmt(AssertStmtNode),
 
@@ -307,6 +301,13 @@
    allocations on the heap, therefore each time a vector is returned
    the memory doesent need to be copied but only the reference needs
    to.
+** Limitations, design choices
+   Vectors can have their size specified (not fixed), but at the
+   moment of writing there are no structures supporting array sizes
+   when passed to functions (like in =C=). String have constant
+   maximum size (128 chars). This is because in the language
+   specification there is no mention to declaration with contextual
+   initialization, which could allow for strings dynamic size.
 
 ** Work hour log
    The project took about 40 hours of work to complete, the early
