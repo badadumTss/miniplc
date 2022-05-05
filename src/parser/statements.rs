@@ -71,6 +71,7 @@ impl Parser {
             Kind::Assert => self.parse_assert(),
             Kind::Return => self.parse_return(),
             Kind::While => self.parse_while_loop(),
+            Kind::If => self.parse_if(),
             other => Err(vec![
                 self.error_at_current(&format!("Unexpected token: {}", other))
             ]),

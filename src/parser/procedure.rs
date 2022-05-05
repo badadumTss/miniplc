@@ -29,23 +29,17 @@ impl Parser {
                         self,
                         advance_with_expected!(Kind::Begin, self, {
                             trace!("procedure {}, args: {}", id.lexeme, args);
+                            let mut ctx = self.context.pop().unwrap();
+                            ctx.push(Symbol {
+                                name: id.lexeme.clone(),
+                                s_type: SymbolType::Procedure,
+                                r_type: Type::Simple(SimpleType::Void),
+                                position: id.position,
+                            });
+                            self.context.push(ctx);
                             self.context.push(args.clone());
                             let block = self.parse_block()?;
                             trace!("block parsed");
-                            match self.context.pop() {
-                                Some(mut ctx) => {
-                                    ctx.push(Symbol {
-                                        name: id.lexeme.clone(),
-                                        s_type: SymbolType::Procedure,
-                                        r_type: Type::Simple(SimpleType::Void),
-                                        position: id.position,
-                                    });
-                                    self.context.push(ctx);
-                                }
-                                None => {
-                                    panic!("Dropped global context while parsing")
-                                }
-                            };
                             Ok(ASTNode::ProcedureDecl(ProcedureDeclNode {
                                 position: self.current.position,
                                 name: id.lexeme,

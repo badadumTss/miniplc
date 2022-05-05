@@ -57,16 +57,18 @@ impl Parser {
             )]),
         }
     }
-    /// Proveate function to parse parameters in a function/procedure
+
+    /// Private function to parse parameters in a function/procedure
     /// declaration
     pub fn parse_parameters(&mut self) -> Result<SymbolTable, Vec<SyntaxError>> {
         trace!("parse parameters");
         let mut params = SymbolTable::new();
-        loop {
-            let param = self.parse_single_param()?;
-            params.push(param);
-            if self.matches(Kind::RightParen) {
-                break;
+        self.advance();
+        if !self.matches(Kind::RightParen) {
+            self.go_back();
+            while !self.matches(Kind::RightParen) {
+                let param = self.parse_single_param()?;
+                params.push(param);
             }
         }
         Ok(params)
@@ -89,9 +91,7 @@ impl Parser {
                             Kind::Semicolon,
                             self,
                             advance_with_expected!(Kind::Begin, self, {
-                                self.context.push(args.clone());
                                 trace!("Parsing function {} block", id.lexeme);
-                                let block = self.parse_block()?;
                                 let mut ctx = self.context.pop().unwrap();
                                 ctx.push(Symbol {
                                     name: id.lexeme.clone(),
@@ -100,6 +100,11 @@ impl Parser {
                                     position: id.position,
                                 });
                                 self.context.push(ctx);
+                                self.context.push(args.clone());
+                                // Parse block after pushing funciton
+                                // name on to the stack, otherwise
+                                // recursion is not available
+                                let block = self.parse_block()?;
                                 Ok(ASTNode::FunctionDecl(FunctionDeclNode {
                                     name: id.lexeme,
                                     position: self.current.position,
@@ -115,56 +120,28 @@ impl Parser {
         })
     }
 
-    pub fn parse_call_parameters(&mut self) -> Result<SymbolTable, Vec<SyntaxError>> {
+    pub fn parse_call_parameters(&mut self) -> Result<Box<[ASTNode]>, Vec<SyntaxError>> {
         trace!("parsing call parameters");
-        let mut params = SymbolTable::new();
+        let mut params: Vec<ASTNode> = Vec::new();
         let mut errors: Vec<SyntaxError> = Vec::new();
         trace!("Entering the loop");
-        loop {
-            match self.advance().kind {
-                Kind::Identifier => {
-                    let param = self.current.clone();
-                    trace!("Single param: {}, {}", param, param.lexeme);
-                    match self.context.last().unwrap().get(param.clone().lexeme) {
-                        Some(p) => {
-                            trace!("Symbol found!");
-                            params.push(p);
-                            match self.advance().kind {
-                                Kind::Comma => {}
-                                Kind::RightParen => {
-                                    break;
-                                }
-                                Kind::Eof => {
-                                    errors.push(self.error_at_current(
-                                        "Found EOF wile parsing call parameters, missing a )?",
-                                    ));
-                                    break;
-                                }
-                                other => {
-                                    trace!("Found other kind {}", other);
-                                    errors.push(self.error_at_current(
-                                        format!("Unexpected token: {}", other).as_str(),
-                                    ));
-                                }
-                            }
-                        }
-                        None => {
-                            trace!("Symbol {} not found", param.clone().lexeme);
-                            errors.push(
-                                self.error_at_current(
-                                    format!("use of undeclared variable: {}", param.clone().lexeme)
-                                        .as_str(),
-                                ),
-                            );
+        self.advance();
+        if !self.matches(Kind::RightParen) {
+            self.go_back();
+            while !self.matches(Kind::Comma) && !self.matches(Kind::RightParen) && !self.is_at_end()
+            {
+                match self.parse_expression() {
+                    Ok(node) => params.push(node),
+                    Err(e) => {
+                        for err in e {
+                            errors.push(err);
                         }
                     }
                 }
-                other => errors
-                    .push(self.error_at_current(format!("Unexpected token: {}", other).as_str())),
             }
         }
         if errors.is_empty() {
-            Ok(params)
+            Ok(params.into_boxed_slice())
         } else {
             Err(errors)
         }

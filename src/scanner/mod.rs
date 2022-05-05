@@ -218,6 +218,8 @@ impl Scanner {
             "string" => Ok(self.gen_token(Kind::TString, word)),
             "bool" => Ok(self.gen_token(Kind::TBool, word)),
             "if" => Ok(self.gen_token(Kind::If, word)),
+            "then" => Ok(self.gen_token(Kind::Then, word)),
+            "else" => Ok(self.gen_token(Kind::Else, word)),
             "false" => Ok(self.gen_token(Kind::False, word)),
             "true" => Ok(self.gen_token(Kind::True, word)),
             "program" => Ok(self.gen_token(Kind::Program, word)),

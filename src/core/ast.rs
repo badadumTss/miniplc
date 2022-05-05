@@ -28,6 +28,8 @@ pub enum ASTNode {
 
     // Statements
     WhileStmt(WhileStmtNode),
+    IfStmt(IfStmtNode),
+    ElseStmt(ElseStmtNode),
     PrintStmt(PrintStmtNode),
     ReadStmt(ReadStmtNode),
     AssertStmt(AssertStmtNode),
@@ -65,6 +67,8 @@ impl ASTNode {
             ASTNode::EofStmt(_) => Type::Simple(SimpleType::Void),
             ASTNode::WhileStmt(_) => Type::Simple(SimpleType::Void),
             ASTNode::ArrayRef(a) => a.r_type,
+            ASTNode::IfStmt(_) => Type::Simple(SimpleType::Void),
+            ASTNode::ElseStmt(_) => Type::Simple(SimpleType::Void),
         }
     }
 }
@@ -214,7 +218,7 @@ pub struct FunctionDeclNode {
 #[derive(Clone, Debug)]
 pub struct FunctionCallNode {
     pub position: Position,
-    pub args: SymbolTable,
+    pub args: Box<[ASTNode]>,
     pub target: String,
     pub r_type: Type,
 }
@@ -230,7 +234,7 @@ pub struct ProcedureDeclNode {
 #[derive(Clone, Debug)]
 pub struct ProcedureCallNode {
     pub position: Position,
-    pub args: SymbolTable,
+    pub args: Box<[ASTNode]>,
     pub target: String,
 }
 
@@ -239,6 +243,20 @@ pub struct BlockNode {
     pub position: Position,
     pub context: SymbolTable,
     pub statements: Box<[ASTNode]>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IfStmtNode {
+    pub position: Position,
+    pub guard: Box<ASTNode>,
+    pub then: Box<ASTNode>,
+    pub else_stmt: Option<Box<ASTNode>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ElseStmtNode {
+    pub position: Position,
+    pub block: Box<ASTNode>,
 }
 
 #[derive(Clone, Debug)]
@@ -288,6 +306,8 @@ impl Display for ASTNode {
             ASTNode::ReturnStmt(_) => write!(f, "return statement"),
             ASTNode::WhileStmt(_) => write!(f, "while loop"),
             ASTNode::ArrayRef(_) => write!(f, "array reference"),
+            ASTNode::IfStmt(_) => write!(f, "If statement"),
+            ASTNode::ElseStmt(_) => write!(f, "else statement"),
         }
     }
 }

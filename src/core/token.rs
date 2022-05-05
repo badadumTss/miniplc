@@ -42,6 +42,8 @@ pub enum Kind {
     // Keywords.
     False,     // false
     If,        // if
+    Then,      // if
+    Else,      // if
     Print,     // print
     Read,      // read
     True,      // true
@@ -115,6 +117,8 @@ impl fmt::Display for Kind {
                 Kind::TArray => "array",
                 Kind::False => "false",
                 Kind::If => "if",
+                Kind::Then => "then",
+                Kind::Else => "else",
                 Kind::Print => "print",
                 Kind::Read => "read",
                 Kind::True => "true",

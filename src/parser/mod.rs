@@ -3,6 +3,7 @@ mod assert;
 mod block;
 mod expressions;
 mod function;
+mod if_stmt;
 mod main;
 mod print;
 mod procedure;

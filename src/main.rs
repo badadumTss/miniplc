@@ -2,7 +2,6 @@ mod compiler;
 mod core;
 mod parser;
 mod scanner;
-mod tests;
 
 use clap::Parser;
 use compiler::Compiler;
@@ -30,16 +29,12 @@ struct Args {
 #[cfg(not(tarpaulin_include))]
 fn main() -> Result<(), Error> {
     let args = Args::parse();
-    // let mut interpreter = Interpreter::new(args.interactive);
 
     stderrlog::new()
         .module(module_path!())
         .verbosity(args.verbose)
         .init()
         .unwrap();
-
-    // trace! {"running file {}", args.file};
-    // interpreter.run_file(args.file)?;
 
     use compiler::State;
 
