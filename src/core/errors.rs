@@ -22,7 +22,6 @@ pub struct EvaluationError {
 #[derive(Debug, Clone)]
 pub struct CompilationError {
     pub position: Position,
-    pub raw_line: String,
     pub description: String,
 }
 
@@ -71,13 +70,14 @@ impl MiniPLError for EvaluationError {
 
 impl MiniPLError for CompilationError {
     fn get_error(&self) -> String {
-        format! {"{} in {}:{} > {}\n\n\t{} |\t{}\n",
-        "Compilation error".red().bold(),
-        self.position.line,
-        self.position.col,
-        self.description.bold(),
-        self.position.line,
-        self.raw_line.bold()}
+        format! {
+            "{} in {}:{} > {}\n\n\t{}",
+            "Compilation error".red().bold(),
+            self.position.line,
+            self.position.col,
+            self.description.bold(),
+            self.position.line,
+        }
     }
 }
 

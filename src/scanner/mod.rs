@@ -229,6 +229,8 @@ impl Scanner {
             "of" => Ok(self.gen_token(Kind::Of, word)),
             "return" => Ok(self.gen_token(Kind::Return, word)),
             "while" => Ok(self.gen_token(Kind::While, word)),
+            "or" => Ok(self.gen_token(Kind::Or, word)),
+            "and" => Ok(self.gen_token(Kind::And, word)),
             _ => Ok(self.gen_token(Kind::Identifier, word)),
         }
     }
@@ -272,7 +274,6 @@ impl Scanner {
                 '*' => Ok(self.gen_token(Kind::Star, c.to_string())),
                 '=' => Ok(self.gen_token(Kind::Equal, c.to_string())),
                 '!' => Ok(self.gen_token(Kind::Bang, c.to_string())),
-                '&' => Ok(self.gen_token(Kind::And, c.to_string())),
                 '[' => Ok(self.gen_token(Kind::LeftSquare, c.to_string())),
                 ']' => Ok(self.gen_token(Kind::RightSquare, c.to_string())),
                 ',' => Ok(self.gen_token(Kind::Comma, c.to_string())),

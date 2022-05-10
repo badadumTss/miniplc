@@ -1,9 +1,8 @@
 use log::trace;
 
 use crate::{
-    advance_with_expected,
     core::{
-        ast::{ASTNode, ArrayRefExpr, VariableNameExpressionNode},
+        ast::{ASTNode, ArrayRefExpr, VarNameNode},
         errors::SyntaxError,
         symbol_table::SymbolType,
         token::Kind,
@@ -42,10 +41,11 @@ impl Parser {
                     }
                     Kind::Semicolon => {
                         self.go_back();
-                        Ok(ASTNode::VarName(VariableNameExpressionNode {
+                        Ok(ASTNode::VarName(VarNameNode {
                             position: id.position,
                             id,
                             r_type: symbol.r_type,
+                            s_type: symbol.s_type,
                         }))
                     }
                     other => Err(vec![self.error_at_current(
@@ -56,10 +56,11 @@ impl Parser {
                         .as_str(),
                     )]),
                 },
-                _ => Ok(ASTNode::VarName(VariableNameExpressionNode {
+                _ => Ok(ASTNode::VarName(VarNameNode {
                     position: self.current.position,
                     id: self.current.clone(),
                     r_type: symbol.r_type,
+                    s_type: symbol.s_type,
                 })),
             },
             None => Err(vec![self.error_at_current(

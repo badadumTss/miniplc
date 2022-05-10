@@ -15,7 +15,8 @@ pub enum Kind {
     Slash,       // /
     Star,        // *
     Bang,        // !
-    And,         // &
+    And,         // and
+    Or,          // or
     Comma,       // ,
 
     // One or two character tokens.
@@ -42,8 +43,8 @@ pub enum Kind {
     // Keywords.
     False,     // false
     If,        // if
-    Then,      // if
-    Else,      // if
+    Then,      // then
+    Else,      // else
     Print,     // print
     Read,      // read
     True,      // true
@@ -98,7 +99,8 @@ impl fmt::Display for Kind {
                 Kind::Slash => "/",
                 Kind::Star => "*",
                 Kind::Bang => "!",
-                Kind::And => "&",
+                Kind::And => "and",
+                Kind::Or => "or",
                 Kind::Equal => "=",
                 Kind::Colon => ":",
                 Kind::ColonEqual => ":=",

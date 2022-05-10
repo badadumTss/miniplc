@@ -1,50 +1,15 @@
-use crate::core::{
-    ast::{FunctionDeclNode, ProcedureDeclNode, ProgramNode},
-    symbol_table::SymbolTable,
-};
+use crate::core::ast::ProgramNode;
 
 use super::Compiler;
 
 impl Compiler {
-    pub fn get_args(&self, mut args: SymbolTable) -> String {
-        let mut to_return = String::new();
-        match args.pop() {
-            Some(sym) => {
-                to_return = format!("{}", sym.r_type);
-                for el in args.symbols.iter() {
-                    to_return = format!("{}, {}", to_return, el.r_type);
-                }
-            }
-            None => {}
-        }
-        to_return
-    }
-
-    pub fn push_function_sign(&mut self, node: FunctionDeclNode) {
-        self.src_ctrl.push_instruction(format!(
-            "{} {}({});",
-            node.r_type,
-            node.name,
-            self.get_args(node.args)
-        ));
-    }
-
-    pub fn push_procedure_sign(&mut self, node: ProcedureDeclNode) {
-        self.src_ctrl.push_instruction(format!(
-            "void {}({});",
-            node.name,
-            self.get_args(node.args)
-        ));
-    }
-
     pub fn compile_program(&mut self, node: ProgramNode) {
-        for f in node.functions.iter() {
-            self.push_function_sign(f.clone());
-        }
-
-        for p in node.procedures.iter() {
-            self.push_procedure_sign(p.clone());
-        }
+        self.push_instruction("int last_int;".to_string());
+        self.push_instruction("bool last_bool;".to_string());
+        self.push_instruction("char* last_str;".to_string());
+        self.push_instruction("int* last_int_arr;".to_string());
+        self.push_instruction("bool last_bool_arr;".to_string());
+        self.push_instruction("char** last_str_arr;".to_string());
 
         for f in node.functions.iter() {
             self.compile_function(f.clone());
@@ -54,6 +19,8 @@ impl Compiler {
             self.compile_procedure(p.clone());
         }
 
+        self.scope = "main".to_string();
         self.compile_block(node.main_block);
+        self.push_instruction("return 0;".to_string());
     }
 }

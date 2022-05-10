@@ -4,7 +4,7 @@ use crate::core::token::*;
 use crate::scanner::position::Position;
 
 use super::objects::Object;
-use super::symbol_table::SymbolTable;
+use super::symbol_table::{SymbolTable, SymbolType};
 use super::types::{SimpleType, Type};
 
 #[derive(Clone, Debug)]
@@ -17,7 +17,7 @@ pub enum ASTNode {
 
     // Expressions
     BinaryExpression(BinaryExprNode),
-    VarName(VariableNameExpressionNode),
+    VarName(VarNameNode),
     ArrayRef(ArrayRefExpr),
     Literal(LiteralExprNode),
     UnaryExpression(UnaryExprNode),
@@ -71,6 +71,33 @@ impl ASTNode {
             ASTNode::ElseStmt(_) => Type::Simple(SimpleType::Void),
         }
     }
+
+    pub fn position(&self) -> Position {
+        match self {
+            ASTNode::Program(node) => Position::new(0, 0, 0),
+            ASTNode::ProgramName(node) => Position::new(0, 0, 0),
+            ASTNode::FunctionDecl(node) => node.position,
+            ASTNode::ProcedureDecl(node) => node.position,
+            ASTNode::Block(node) => node.position,
+            ASTNode::BinaryExpression(node) => node.position,
+            ASTNode::VarName(node) => node.position,
+            ASTNode::ArrayRef(node) => node.position,
+            ASTNode::Literal(node) => node.position,
+            ASTNode::UnaryExpression(node) => node.position,
+            ASTNode::VarReassignment(node) => node.position,
+            ASTNode::VariableDecl(node) => node.position,
+            ASTNode::WhileStmt(node) => node.position,
+            ASTNode::IfStmt(node) => node.position,
+            ASTNode::ElseStmt(node) => node.position,
+            ASTNode::PrintStmt(node) => node.position,
+            ASTNode::ReadStmt(node) => node.position,
+            ASTNode::AssertStmt(node) => node.position,
+            ASTNode::FunctionCallStmt(node) => node.position,
+            ASTNode::ProcedureCallStmt(node) => node.position,
+            ASTNode::ReturnStmt(node) => node.token.position,
+            ASTNode::EofStmt(node) => Position::new(0, 0, 0),
+        }
+    }
 }
 
 /// Node that rapresent a whole program, each statement is an ASTNode
@@ -118,10 +145,11 @@ impl Display for BinaryExprType {
 
 /// Node to rapresent an Identifier
 #[derive(Clone, Debug)]
-pub struct VariableNameExpressionNode {
+pub struct VarNameNode {
     pub position: Position,
     pub id: Token,
     pub r_type: Type,
+    pub s_type: SymbolType,
 }
 
 /// Node to rapresent a reference to an array
@@ -139,6 +167,12 @@ pub struct LiteralExprNode {
     pub position: Position,
     pub value: Object,
     pub r_type: Type,
+}
+
+impl LiteralExprNode {
+    pub fn to_c_lit(&self) -> String {
+        self.value.to_c_lit()
+    }
 }
 
 /// Node to rapresent a unary expression (Namely !<expression>)
@@ -181,7 +215,7 @@ pub struct WhileStmtNode {
 #[derive(Clone, Debug)]
 pub struct ReadStmtNode {
     pub position: Position,
-    pub variable_to_read_in: Token,
+    pub variable_to_read_in: Box<ASTNode>,
 }
 
 /// Node that rapresent a statement to assign a value to a variable

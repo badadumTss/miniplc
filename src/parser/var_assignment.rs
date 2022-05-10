@@ -3,7 +3,7 @@ use log::trace;
 use crate::{
     advance_with_expected,
     core::{
-        ast::{ASTNode, ArrayRefExpr, VarReassignmentExprNode, VariableNameExpressionNode},
+        ast::{ASTNode, ArrayRefExpr, VarNameNode, VarReassignmentExprNode},
         errors::SyntaxError,
         symbol_table::SymbolType,
         token::Kind,
@@ -59,13 +59,12 @@ impl Parser {
                             self.advance();
                             Ok(ASTNode::VarReassignment(VarReassignmentExprNode {
                                 position: id.position,
-                                variable_to_reassign: Box::new(ASTNode::VarName(
-                                    VariableNameExpressionNode {
-                                        position: id.position,
-                                        id,
-                                        r_type: sym.r_type,
-                                    },
-                                )),
+                                variable_to_reassign: Box::new(ASTNode::VarName(VarNameNode {
+                                    position: id.position,
+                                    id,
+                                    r_type: sym.r_type,
+                                    s_type: sym.s_type,
+                                })),
                                 new_value: Box::new(new_arr),
                             }))
                         }
@@ -93,13 +92,12 @@ impl Parser {
                     if new_val.r_type() == sym.r_type {
                         Ok(ASTNode::VarReassignment(VarReassignmentExprNode {
                             position: id.position,
-                            variable_to_reassign: Box::new(ASTNode::VarName(
-                                VariableNameExpressionNode {
-                                    position: id.position,
-                                    id,
-                                    r_type: sym.r_type,
-                                },
-                            )),
+                            variable_to_reassign: Box::new(ASTNode::VarName(VarNameNode {
+                                position: id.position,
+                                id,
+                                r_type: sym.r_type,
+                                s_type: sym.s_type,
+                            })),
                             new_value: Box::new(new_val),
                         }))
                     } else {

@@ -8,6 +8,17 @@ pub enum SimpleType {
     Void,
 }
 
+impl SimpleType {
+    pub fn to_c_type(&self) -> String {
+        match self {
+            SimpleType::Int => "int".to_string(),
+            SimpleType::String => "*char".to_string(),
+            SimpleType::Bool => "bool".to_string(),
+            SimpleType::Void => "void".to_string(),
+        }
+    }
+}
+
 impl Display for SimpleType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -41,8 +52,15 @@ impl Display for Type {
 impl Type {
     pub fn internal(&self) -> SimpleType {
         match self {
-            Type::Simple(s) => s.clone(),
-            Type::Array(s) => s.clone(),
+            Type::Simple(s) => *s,
+            Type::Array(s) => *s,
+        }
+    }
+
+    pub fn to_c_type(&self) -> String {
+        match self {
+            Type::Simple(s) => s.to_c_type(),
+            Type::Array(a) => format!("*{}", a.to_c_type()),
         }
     }
 }

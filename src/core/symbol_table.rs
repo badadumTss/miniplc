@@ -48,6 +48,19 @@ impl SymbolTable {
             symbols: Vec::new(),
         }
     }
+
+    pub fn iter(&self) -> core::slice::Iter<Symbol> {
+        self.symbols.iter()
+    }
+
+    pub fn to_decl_form(&self) -> String {
+        let mut to_return = String::new();
+        for el in self.symbols.iter() {
+            to_return = format!("{} {},", el.r_type.to_c_type(), el.name);
+        }
+        to_return.pop();
+        to_return
+    }
 }
 
 impl Display for Symbol {
