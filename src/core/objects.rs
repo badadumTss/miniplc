@@ -26,7 +26,7 @@ impl Object {
                     to_out = format!("{}{},", to_out, el.to_c_lit());
                 }
                 to_out.pop();
-                to_out += &"}".to_string();
+                to_out += "}";
                 to_out
             }
         }
