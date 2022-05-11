@@ -9,10 +9,10 @@ pub enum SimpleType {
 }
 
 impl SimpleType {
-    pub fn to_c_type(&self) -> String {
+    pub fn to_c_type(self) -> String {
         match self {
             SimpleType::Int => "int".to_string(),
-            SimpleType::String => "*char".to_string(),
+            SimpleType::String => "char*".to_string(),
             SimpleType::Bool => "bool".to_string(),
             SimpleType::Void => "void".to_string(),
         }
@@ -57,10 +57,10 @@ impl Type {
         }
     }
 
-    pub fn to_c_type(&self) -> String {
+    pub fn to_c_type(self) -> String {
         match self {
             Type::Simple(s) => s.to_c_type(),
-            Type::Array(a) => format!("*{}", a.to_c_type()),
+            Type::Array(a) => format!("{}*", a.to_c_type()),
         }
     }
 }

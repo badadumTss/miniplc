@@ -45,21 +45,21 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn insert_header(&mut self) {
-        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\nint main(){\n"
+        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\nint main(){\n\n"
             .to_string()
             + &self.source;
     }
 
     pub fn insert_footer(&mut self) {
-        self.source += "\n}";
+        self.source += "\n}\n";
     }
 
     pub fn push_instruction(&mut self, instr: String) {
-        self.raw_instructions = format!("{}{}\n", self.raw_instructions, instr);
+        self.raw_instructions = format!("{}    {}\n", self.raw_instructions, instr);
     }
 
-    pub fn push_instruction_raw(&mut self, instr: String) {
-        self.raw_instructions = format!("{}{}", self.raw_instructions, instr);
+    pub fn push_label(&mut self, label: String) {
+        self.raw_instructions = format!("{}{}:\n", self.raw_instructions, label);
     }
 
     pub fn gen_source(&mut self) {
@@ -93,11 +93,7 @@ impl Compiler {
 
     pub fn compile_ast(&mut self, ast: ASTNode) {
         match ast {
-            ASTNode::Program(p) => {
-                self.compile_program(p);
-                self.gen_source();
-                println!("{}", self.get_source())
-            }
+            ASTNode::Program(p) => self.compile_program(p),
             ASTNode::ProgramName(node) => self.compile_program_name(node),
             ASTNode::FunctionDecl(f_node) => self.compile_function(f_node),
             ASTNode::ProcedureDecl(p_node) => self.compile_procedure(p_node),

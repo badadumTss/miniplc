@@ -1,3 +1,5 @@
+
+
 use log::trace;
 
 use crate::{
@@ -32,6 +34,7 @@ impl Parser {
                             },
                             r_type,
                             position: id.position,
+                            args: None,
                         }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
                     }
@@ -47,6 +50,7 @@ impl Parser {
                             s_type: SymbolType::Param,
                             r_type,
                             position: id.position,
+                            args: None,
                         }),
                         other => Err(self.unexpected_token_err(Kind::RightParen, other)),
                     }
@@ -98,6 +102,7 @@ impl Parser {
                                     s_type: SymbolType::Function,
                                     r_type,
                                     position: id.position,
+                                    args: Some(Box::new(args.clone())),
                                 });
                                 self.context.push(ctx);
                                 self.context.push(args.clone());
@@ -156,16 +161,39 @@ impl Parser {
                 if f_sym.s_type == SymbolType::Function {
                     advance_with_expected!(Kind::LeftParen, self, {
                         let params = self.parse_call_parameters()?;
-                        current_with_expected!(
-                            Kind::RightParen,
-                            self,
-                            Ok(ASTNode::FunctionCallStmt(FunctionCallNode {
-                                position: f_name.position,
-                                args: params,
-                                target: f_name.lexeme,
-                                r_type: f_sym.r_type
-                            }))
-                        )
+                        if let Some(args) = f_sym.args {
+                            let args_ref = args.as_ref();
+                            let same_len = params.len() == args_ref.len();
+                            if same_len {
+                                let mut args_with_lexeme: Vec<(String, ASTNode)> = Vec::new();
+                                for (a, b) in args_ref.iter().zip(params.iter()) {
+                                    if a.r_type != b.r_type() {
+                                        return Err(vec![self.error_at_current(
+                                            "Mismatching types in function call",
+                                        )]);
+                                    }
+                                    args_with_lexeme.push((a.clone().name, b.clone()));
+                                }
+                                current_with_expected!(
+                                    Kind::RightParen,
+                                    self,
+                                    Ok(ASTNode::FunctionCallStmt(FunctionCallNode {
+                                        position: f_name.position,
+                                        args: args_with_lexeme.into_boxed_slice(),
+                                        target: f_name.lexeme,
+                                        r_type: f_sym.r_type
+                                    }))
+                                )
+                            } else {
+                                Err(vec![self.error_at_current(
+                                    "Function call with wrong number of parameters",
+                                )])
+                            }
+                        } else {
+                            Err(vec![self.error_at_current(
+                                "Initialized function with empty arg table",
+                            )])
+                        }
                     })
                 } else {
                     Err(vec![self.error_at_current(

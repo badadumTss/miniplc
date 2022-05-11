@@ -11,11 +11,15 @@ impl Compiler {
         self.compile_ast(child.clone());
         match child.r_type() {
             Type::Simple(t) => match t {
-                SimpleType::Int => self.push_instruction("printf(\"%d\", last_int);".to_string()),
-                SimpleType::String => {
-                    self.push_instruction("printf(\"%s\", last_str);".to_string())
+                SimpleType::Int => {
+                    self.push_instruction("printf(\"%d\\n\", last_int);".to_string())
                 }
-                SimpleType::Bool => self.push_instruction("printf(\"%d\", last_bool);".to_string()),
+                SimpleType::String => {
+                    self.push_instruction("printf(\"%s\\n\", last_str);".to_string())
+                }
+                SimpleType::Bool => {
+                    self.push_instruction("printf(\"%d\\n\", last_bool);".to_string())
+                }
                 SimpleType::Void => {
                     self.push_c_error(child.clone(), "Unable to print a void expression");
                 }

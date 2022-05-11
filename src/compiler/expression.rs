@@ -121,17 +121,17 @@ impl Compiler {
             Type::Array(a) => match a {
                 SimpleType::Int => {
                     let label = self.advance_label();
-                    self.push_instruction(format!("int* tmp_{}[] = {};", label, expr.to_c_lit()));
+                    self.push_instruction(format!("int tmp_{}[] = {};", label, expr.to_c_lit()));
                     self.push_instruction(format!("last_int_arr = tmp_{};", label));
                 }
                 SimpleType::String => {
                     let label = self.advance_label();
-                    self.push_instruction(format!("char** tmp_{}[] = {};", label, expr.to_c_lit()));
+                    self.push_instruction(format!("char* tmp_{}[] = {};", label, expr.to_c_lit()));
                     self.push_instruction(format!("last_str_arr = tmp_{};", label));
                 }
                 SimpleType::Bool => {
                     let label = self.advance_label();
-                    self.push_instruction(format!("int* tmp_{}[] = {};", label, expr.to_c_lit()));
+                    self.push_instruction(format!("int tmp_{}[] = {};", label, expr.to_c_lit()));
                     self.push_instruction(format!("last_bool_arr = tmp_{};", label));
                 }
                 SimpleType::Void => {

@@ -19,9 +19,9 @@ impl Compiler {
             self.compile_ast(else_node.as_ref().clone());
         }
         self.push_instruction(format!("goto *endifptr_{};", cur));
-        self.push_instruction(format!("then_{}:", cur));
+        self.push_label(format!("then_{}", cur));
         self.compile_ast(node.then.as_ref().clone());
-        self.push_instruction(format!("endif_{}:", cur));
+        self.push_label(format!("endif_{}", cur));
     }
 
     pub fn compile_else(&mut self, node: ElseStmtNode) {

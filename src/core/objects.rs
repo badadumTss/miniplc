@@ -23,7 +23,7 @@ impl Object {
             Object::Array(a) => {
                 let mut to_out = "{".to_string();
                 for el in a.iter() {
-                    to_out = format!("{}, {}", to_out, el.to_c_lit());
+                    to_out = format!("{}{},", to_out, el.to_c_lit());
                 }
                 to_out.pop();
                 to_out += &"}".to_string();
@@ -39,7 +39,7 @@ impl Display for Object {
             Object::Int(v) => v.to_string(),
             Object::String(v) => v.to_string(),
             Object::Bool(v) => v.to_string(),
-            Object::Array(a) => String::from_str("string").unwrap(),
+            Object::Array(_a) => String::from_str("string").unwrap(),
         };
         let typ = match self {
             Object::Int(_) => String::from_str("int"),

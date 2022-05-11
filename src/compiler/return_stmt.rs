@@ -7,7 +7,8 @@ impl Compiler {
         if let Some(var) = expr.value {
             self.compile_ast(var.as_ref().clone());
             self.push_instruction(format!(
-                "return last_{};",
+                "{} = last_{};",
+                Compiler::f_ret_value(self.scope.clone()),
                 Compiler::type_for_last(var.r_type())
             ));
         } else {

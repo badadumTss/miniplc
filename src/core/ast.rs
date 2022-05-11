@@ -74,8 +74,8 @@ impl ASTNode {
 
     pub fn position(&self) -> Position {
         match self {
-            ASTNode::Program(node) => Position::new(0, 0, 0),
-            ASTNode::ProgramName(node) => Position::new(0, 0, 0),
+            ASTNode::Program(_node) => Position::new(0, 0, 0),
+            ASTNode::ProgramName(_node) => Position::new(0, 0, 0),
             ASTNode::FunctionDecl(node) => node.position,
             ASTNode::ProcedureDecl(node) => node.position,
             ASTNode::Block(node) => node.position,
@@ -95,7 +95,7 @@ impl ASTNode {
             ASTNode::FunctionCallStmt(node) => node.position,
             ASTNode::ProcedureCallStmt(node) => node.position,
             ASTNode::ReturnStmt(node) => node.token.position,
-            ASTNode::EofStmt(node) => Position::new(0, 0, 0),
+            ASTNode::EofStmt(_node) => Position::new(0, 0, 0),
         }
     }
 }
@@ -252,7 +252,7 @@ pub struct FunctionDeclNode {
 #[derive(Clone, Debug)]
 pub struct FunctionCallNode {
     pub position: Position,
-    pub args: Box<[ASTNode]>,
+    pub args: Box<[(String, ASTNode)]>,
     pub target: String,
     pub r_type: Type,
 }
@@ -268,7 +268,7 @@ pub struct ProcedureDeclNode {
 #[derive(Clone, Debug)]
 pub struct ProcedureCallNode {
     pub position: Position,
-    pub args: Box<[ASTNode]>,
+    pub args: Box<[(String, ASTNode)]>,
     pub target: String,
 }
 

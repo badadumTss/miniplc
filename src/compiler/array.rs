@@ -7,8 +7,9 @@ use super::Compiler;
 impl Compiler {
     pub fn compile_array_ref(&mut self, arr: ArrayRefExpr) {
         trace!("compiling array reference");
-        self.push_instruction(arr.array.lexeme + "[");
         self.compile_ast(arr.index.as_ref().clone());
-        self.push_instruction("]".to_string());
+        let r_type = arr.r_type.internal().to_c_type();
+        let name = format!("{}_{}", self.scope, arr.array.lexeme);
+        self.push_instruction(format!("last_{} = {}[last_int];", r_type, name));
     }
 }

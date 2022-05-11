@@ -36,6 +36,7 @@ impl Parser {
                         },
                         r_type,
                         position,
+                        args: None,
                     });
                     self.context.push(table);
                     Ok(())

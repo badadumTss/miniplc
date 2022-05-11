@@ -35,15 +35,6 @@ impl SyntaxError {
     }
 }
 
-impl EvaluationError {
-    pub fn new(position_: Position, description_: String) -> EvaluationError {
-        EvaluationError {
-            position: position_,
-            description: description_,
-        }
-    }
-}
-
 impl MiniPLError for SyntaxError {
     fn get_error(&self) -> String {
         format! {"{} in {}:{} > {}\n\n\t{} |\t{}\n",

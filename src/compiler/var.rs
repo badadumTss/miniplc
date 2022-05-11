@@ -19,10 +19,9 @@ impl Compiler {
     pub fn get_symbol(&mut self, item: ASTNode) -> String {
         match item.clone() {
             ASTNode::VarName(node) => match node.s_type {
-                SymbolType::Var | SymbolType::Param | SymbolType::VarParam => {
-                    node.id.lexeme.to_lowercase()
+                SymbolType::Var | SymbolType::VarParam | SymbolType::Param | SymbolType::Arr => {
+                    format!("{}_{}", self.scope, node.id.lexeme.to_lowercase())
                 }
-                SymbolType::Arr => todo!(),
                 _ => {
                     self.push_c_error(item, "Expected variable name, found function name");
                     String::new()
@@ -30,7 +29,7 @@ impl Compiler {
             },
             ASTNode::ArrayRef(node) => {
                 self.compile_ast(node.index.as_ref().clone());
-                format!("{}[last_int]", node.array.lexeme)
+                format!("{}_{}[last_int]", self.scope, node.array.lexeme)
             }
             _ => {
                 self.push_c_error(item, "Unknown variable to reassign");
@@ -41,8 +40,9 @@ impl Compiler {
 
     pub fn compile_var_decl(&mut self, expr: VariableDeclNode) {
         self.push_instruction(format!(
-            "{} {};",
+            "{} {}_{};",
             expr.var_type.to_c_type(),
+            self.scope,
             expr.id.lexeme.to_lowercase()
         ));
     }
@@ -50,7 +50,7 @@ impl Compiler {
     pub fn compile_var_name(&mut self, expr: VarNameNode) {
         let name = match expr.s_type {
             SymbolType::Var | SymbolType::VarParam | SymbolType::Param => {
-                expr.id.lexeme.to_lowercase()
+                format!("{}_{}", self.scope, expr.id.lexeme.to_lowercase())
             }
             SymbolType::Arr => todo!(),
             _ => {

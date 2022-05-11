@@ -10,6 +10,8 @@ impl Compiler {
         self.push_instruction("int* last_int_arr;".to_string());
         self.push_instruction("bool last_bool_arr;".to_string());
         self.push_instruction("char** last_str_arr;".to_string());
+        self.push_instruction("void* main_block_ptr = &&main_block;".to_string());
+        self.push_instruction("goto *main_block_ptr;".to_string());
 
         for f in node.functions.iter() {
             self.compile_function(f.clone());
@@ -20,6 +22,7 @@ impl Compiler {
         }
 
         self.scope = "main".to_string();
+        self.push_label("main_block".to_string());
         self.compile_block(node.main_block);
         self.push_instruction("return 0;".to_string());
     }

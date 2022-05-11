@@ -20,6 +20,7 @@ pub struct Symbol {
     pub s_type: SymbolType,
     pub r_type: Type,
     pub position: Position,
+    pub args: Option<Box<SymbolTable>>,
 }
 
 #[derive(Clone, Debug)]
@@ -39,10 +40,6 @@ impl SymbolTable {
         self.symbols.push(sym)
     }
 
-    pub fn pop(&mut self) -> Option<Symbol> {
-        self.symbols.pop()
-    }
-
     pub fn new() -> SymbolTable {
         SymbolTable {
             symbols: Vec::new(),
@@ -53,13 +50,8 @@ impl SymbolTable {
         self.symbols.iter()
     }
 
-    pub fn to_decl_form(&self) -> String {
-        let mut to_return = String::new();
-        for el in self.symbols.iter() {
-            to_return = format!("{} {},", el.r_type.to_c_type(), el.name);
-        }
-        to_return.pop();
-        to_return
+    pub fn len(&self) -> usize {
+        self.symbols.len()
     }
 }
 

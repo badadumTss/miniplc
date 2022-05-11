@@ -264,7 +264,7 @@
    #+END_SRC
    Is the node that represent the whole program, containing the
    statements in a Boxed vector of generic ~ASTNode~.
-** Error handling
+** Error handling in parsing
    Error are carried trough internally for each phase. Usually each
    phase returns either the required structure or a vector containing
    the errors found, except for the scanner, which returns iteratively
@@ -301,6 +301,31 @@
    allocations on the heap, therefore each time a vector is returned
    the memory doesent need to be copied but only the reference needs
    to.
+** Compilation
+   Compilation happens trough the emission of single instructions that
+   will rapresent the program. The assumption with the given =ASTNode=
+   is that it is /correct/, this means that types are checked and for
+   example for function calls/returns the correct number of variables
+   is also checked. This means that compilations errors are much more
+   rare than syntax errors found by the parser and therefore I choose
+   to handle the thing in a different manner
+*** Error handling and compilation process
+    The compilation happens trough a match mechanism, the funciton
+    ~.compile(source: String)~ first parses the source, then if it
+    returns a valid ASTNode it lanuches ~.compile_ast(node: ASTNode)~
+    on it. the function checks the node type and calls the apropriate
+    function to handle it, wich will reciursively call ~compile_ast~
+    if it needs to compile a child node. The final =C= code is managed
+    trough 2 main functions: ~push_instruction~ and
+    ~push_label~. These two functions allow to write in a temporary
+    buffer either instructions (as low level as possible) or labels
+    (used for returns and functions/procedures/main_block
+    labeling). These functions return nothing, and therefore if an
+    error occurs the function ~push_c_error~ has to be called, so that
+    it can store a ~CompilationError~ in the internal rapresentation
+    of the compiler. If in the end there are no Compilation, nor
+    Syntax errors in the compiler, the code is emitted in a file (if
+    the user specified wich file, otherwise it defaults to =out.c=).
 ** Limitations, design choices
    Vectors can have their size specified (not fixed), but at the
    moment of writing there are no structures supporting array sizes
@@ -308,7 +333,24 @@
    maximum size (128 chars). This is because in the language
    specification there is no mention to declaration with contextual
    initialization, which could allow for strings dynamic size.
-
+** Known Bugs
+   - Currently all programs compiled to =C= that use recursion
+     halt. This is due to the fact that the return pointer for a
+     function is handled trough a unique reference and not a
+     stack. The obvious fix is to implement a return stack for each
+     function, but due to lack of time I did not implement
+     this. Currently all types have a single-value stack rapresented
+     by a fictional register called ~last_type~ where ~type~ can be
+     =str=, =int=, =bool=, =str_arr=, =int_arr= or =bool_arr=.
+   - The =.len= feature for arrays is not finished. This is because of
+     the time constraints with the project and the constraints with
+     =C= itself.  managing memory at low level is very challenging to
+     do in a short amount of time.
+   - Produced programs leak memory. A lot. This is due to the fact
+     that i do not store all the pointers for allocated memory (arrays
+     or strings) and when the program terminates they still are in the
+     stack. Running MiniPL programs for a long time is still not
+     feasible.
 ** Work hour log
    The project took about 40 hours of work to complete, the early
    stages of the project were the most critical ones, from the design

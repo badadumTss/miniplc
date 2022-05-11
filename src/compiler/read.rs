@@ -54,7 +54,7 @@ impl Compiler {
                     "%d"
                 }
             },
-            Type::Array(s) => {
+            Type::Array(_s) => {
                 self.push_c_error(
                     ASTNode::ReadStmt(node.clone()),
                     "Trying to read into whole array",
