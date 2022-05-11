@@ -7,7 +7,7 @@ use crate::{
         errors::SyntaxError,
         symbol_table::SymbolTable,
         token::Kind,
-        types::{SimpleType},
+        types::SimpleType,
     },
     current_with_expected,
 };
