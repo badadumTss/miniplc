@@ -35,9 +35,9 @@
      #+BEGIN_SRC sh
        cargo build
      #+END_SRC
-   - Testing (running tests in [[file:src/tests/][src/tests]]) can be done with
+   - Building for release can be done with
      #+BEGIN_SRC sh
-       cargo test
+       cargo build --release
      #+END_SRC
 ** This documentation
    Will probably look a bit quirky on GitHub. It was generated thanks
