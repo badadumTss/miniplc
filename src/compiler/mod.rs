@@ -45,7 +45,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn insert_header(&mut self) {
-        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\nint main(){\n\n".to_string()
+        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\n#include <assert.h>\nint main(){\n\n".to_string()
             + &self.source;
     }
 
