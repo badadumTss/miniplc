@@ -10,6 +10,6 @@ impl Compiler {
         self.compile_ast(arr.index.as_ref().clone());
         let r_type = arr.r_type.internal().to_c_type();
         let name = format!("{}_{}", self.scope, arr.array.lexeme);
-        self.push_instruction(format!("last_{} = {}[last_int];", r_type, name));
+        self.emit(format!("last_{} = {}[last_int];", r_type, name));
     }
 }

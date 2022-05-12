@@ -3,6 +3,7 @@ use std::{fmt::Display, str::FromStr};
 #[derive(Debug, Clone)]
 pub enum Object {
     Int(i64),
+    Real(f64),
     String(String),
     Bool(bool),
     Array(Box<[Object]>),
@@ -12,7 +13,7 @@ impl Object {
     pub fn to_c_lit(&self) -> String {
         match self {
             Object::Int(i) => i.to_string(),
-            Object::String(s) => format!("\"{}\"", s),
+            Object::String(s) => s.clone(),
             Object::Bool(b) => {
                 if *b {
                     "true".to_string()
@@ -29,6 +30,7 @@ impl Object {
                 to_out += "}";
                 to_out
             }
+            Object::Real(r) => r.to_string(),
         }
     }
 }
@@ -40,12 +42,14 @@ impl Display for Object {
             Object::String(v) => v.to_string(),
             Object::Bool(v) => v.to_string(),
             Object::Array(_a) => String::from_str("string").unwrap(),
+            Object::Real(v) => v.to_string(),
         };
         let typ = match self {
             Object::Int(_) => String::from_str("int"),
             Object::String(_) => String::from_str("string"),
             Object::Bool(_) => String::from_str("bool"),
             Object::Array(_) => String::from_str("array"),
+            Object::Real(_) => String::from_str("real"),
         }
         .unwrap();
         write!(f, "(v: {}, t: {})", val, typ)

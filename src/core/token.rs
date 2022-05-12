@@ -27,16 +27,18 @@ pub enum Kind {
     GreaterEqual, // >=
     Less,         // <
     LessEqual,    // <=
-    Ddot,         // ..
+    Dot,          // .
 
     // Literals.
     Identifier, // Var Id
     LitString,  // "String"
     LitInt,     // 1
+    LitReal,    // 1.20e-50
 
     //Types
     TString, // string
     TInt,    // int
+    TReal,   // real
     TBool,   // bool
     TArray,  // array
 
@@ -108,13 +110,15 @@ impl fmt::Display for Kind {
                 Kind::GreaterEqual => "",
                 Kind::Less => "<",
                 Kind::LessEqual => "<=",
-                Kind::Ddot => "..",
+                Kind::Dot => ".",
                 Kind::Comma => ",",
                 Kind::Identifier => "Identifier",
                 Kind::LitString => "\"String\"",
                 Kind::LitInt => "literal int",
+                Kind::LitReal => "literal real",
                 Kind::TString => "literal string",
                 Kind::TInt => "type int",
+                Kind::TReal => "type real",
                 Kind::TBool => "type bool",
                 Kind::TArray => "array",
                 Kind::False => "false",

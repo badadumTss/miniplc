@@ -18,11 +18,6 @@ impl Parser {
         let mut to_return: Vec<Object> = Vec::new();
         let initial = self.current.clone();
         let mut r_type = SimpleType::Int;
-        trace!(
-            "Mannaggia dio, token: {}, al posto {}",
-            self.current.lexeme,
-            self.current.position
-        );
         if self.matches(Kind::LeftSquare) {
             while !self.matches(Kind::RightSquare) {
                 let sym = self.parse_unary()?;
@@ -58,12 +53,6 @@ impl Parser {
                 }
             }
         };
-
-        trace!(
-            "Mannaggia dio, token: {}, al posto {}",
-            self.current.lexeme,
-            self.current.position
-        );
         if errors.is_empty() {
             Ok(ASTNode::Literal(LiteralExprNode {
                 position: initial.position,

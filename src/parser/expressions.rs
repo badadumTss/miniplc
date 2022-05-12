@@ -88,6 +88,15 @@ impl Parser {
                     r_type: Type::Simple(SimpleType::Int),
                 }))
             }
+            Kind::LitReal => {
+                self.advance();
+                trace!("Real value: {}", self.previous.clone().lexeme);
+                Ok(ASTNode::Literal(LiteralExprNode {
+                    position: self.previous.position,
+                    value: Object::Real(self.previous.clone().lexeme.parse::<f64>().unwrap()),
+                    r_type: Type::Simple(SimpleType::Real),
+                }))
+            }
             Kind::LeftParen => match self.parse_expression() {
                 Ok(node) => match self.current.kind {
                     Kind::RightParen => {

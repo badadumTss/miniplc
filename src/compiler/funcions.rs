@@ -20,38 +20,34 @@ impl Compiler {
         self.scope = f.name.clone();
         trace!("Compiling function declaration");
         for sym in f.args.iter() {
-            self.push_instruction(format!(
+            self.emit(format!(
                 "{} {}_{};",
                 sym.r_type.to_c_type(),
                 f.name,
                 sym.name
             ));
         }
-        self.push_instruction(format!(
+        self.emit(format!(
             "{} {};",
             f.r_type.to_c_type(),
             Compiler::f_ret_value(f.name.clone())
         ));
-        self.push_instruction(format!("void* {};", Compiler::f_ret_ptr(f.name.clone())));
-        self.push_instruction(format!("void* fptr_{} = &&f_{};", f.name, f.name));
-        self.push_label(format!("f_{}", f.name));
+        self.emit(format!("void* {};", Compiler::f_ret_ptr(f.name.clone())));
+        self.emit(format!("void* fptr_{} = &&f_{};", f.name, f.name));
+        self.emit_label(format!("f_{}", f.name));
         self.compile_ast(*f.block);
-        self.push_instruction(format!("goto *{};", Compiler::f_ret_ptr(f.name)))
+        self.emit(format!("goto *{};", Compiler::f_ret_ptr(f.name)))
     }
 
-    pub fn type_for_last(r_type: Type) -> &'static str {
+    pub fn type_for_last(r_type: Type) -> String {
         match r_type {
             Type::Simple(a) => match a {
-                SimpleType::Int => "int",
-                SimpleType::String => "str",
-                SimpleType::Bool => "bool",
-                SimpleType::Void => "void",
+                SimpleType::String => "str".to_string(),
+                _ => a.to_c_type(),
             },
             Type::Array(a) => match a {
-                SimpleType::Int => "int_arr",
-                SimpleType::String => "str_arr",
-                SimpleType::Bool => "bool_arr",
-                SimpleType::Void => "void_arr",
+                SimpleType::String => "str_arr".to_string(),
+                _ => format!("{}_arr", a.to_c_type()),
             },
         }
     }
@@ -62,16 +58,16 @@ impl Compiler {
         for arg in f.args.iter() {
             self.compile_ast(arg.1.clone());
             let r_type = Compiler::type_for_last(arg.1.r_type());
-            self.push_instruction(format!("{}_{} = last_{};", f.target, arg.0, r_type));
+            self.emit(format!("{}_{} = last_{};", f.target, arg.0, r_type));
         }
-        self.push_instruction(format!(
+        self.emit(format!(
             "{} = &&ret_{};",
             Compiler::f_ret_ptr(f.clone().target),
             label
         ));
-        self.push_instruction(format!("goto f_{};", f.target));
-        self.push_label(format!("ret_{}", label));
-        self.push_instruction(format!(
+        self.emit(format!("goto f_{};", f.target));
+        self.emit_label(format!("ret_{}", label));
+        self.emit(format!(
             "last_{} = {};",
             Compiler::type_for_last(f.r_type),
             Compiler::f_ret_value(f.target)

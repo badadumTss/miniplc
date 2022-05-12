@@ -3,6 +3,7 @@ use std::fmt::Display;
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SimpleType {
     Int,
+    Real,
     String,
     Bool,
     Void,
@@ -15,6 +16,7 @@ impl SimpleType {
             SimpleType::String => "char*".to_string(),
             SimpleType::Bool => "bool".to_string(),
             SimpleType::Void => "void".to_string(),
+            SimpleType::Real => "float".to_string(),
         }
     }
 }
@@ -29,6 +31,7 @@ impl Display for SimpleType {
                 SimpleType::String => "string",
                 SimpleType::Bool => "bool",
                 SimpleType::Void => "void",
+                SimpleType::Real => "float",
             }
         )
     }

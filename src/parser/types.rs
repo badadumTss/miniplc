@@ -32,6 +32,7 @@ impl Parser {
         match self.advance().kind {
             Kind::TString => Ok(Type::Simple(SimpleType::String)),
             Kind::TInt => Ok(Type::Simple(SimpleType::Int)),
+            Kind::TReal => Ok(Type::Simple(SimpleType::Real)),
             Kind::TArray => self.parse_array_type(),
             Kind::TBool => Ok(Type::Simple(SimpleType::Bool)),
             other => Err(vec![self.error_at_current(

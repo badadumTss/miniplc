@@ -190,14 +190,33 @@ impl Scanner {
     fn digits(&mut self) -> Result<Token, SyntaxError> {
         let mut digit: String = String::new();
         digit.push(self.get_current().unwrap()); //digit that triggered the function
+        let mut is_real = false;
+        let mut e_found = false;
+        let mut sign_found = false;
         while let Some(c) = self.advance() {
             match c {
                 c if c.is_digit(10) => digit.push(c),
+                '.' => {
+                    digit.push('.');
+                    is_real = true;
+                }
+                'e' if is_real && !e_found => {
+                    digit.push('e');
+                    e_found = true;
+                }
+                '-' if is_real && !sign_found => {
+                    digit.push('-');
+                    sign_found = true;
+                }
                 _ => break,
             }
         }
         self.go_back();
-        Ok(self.gen_token(Kind::LitInt, digit))
+        if is_real {
+            Ok(self.gen_token(Kind::LitReal, digit))
+        } else {
+            Ok(self.gen_token(Kind::LitInt, digit))
+        }
     }
 
     /// Recognises any one of the listed strings as tokens, if none is
@@ -215,6 +234,7 @@ impl Scanner {
             "writeln" => Ok(self.gen_token(Kind::Print, word)),
             "assert" => Ok(self.gen_token(Kind::Assert, word)),
             "int" => Ok(self.gen_token(Kind::TInt, word)),
+            "real" => Ok(self.gen_token(Kind::TReal, word)),
             "string" => Ok(self.gen_token(Kind::TString, word)),
             "bool" => Ok(self.gen_token(Kind::TBool, word)),
             "if" => Ok(self.gen_token(Kind::If, word)),
@@ -278,6 +298,7 @@ impl Scanner {
                 ']' => Ok(self.gen_token(Kind::RightSquare, c.to_string())),
                 ',' => Ok(self.gen_token(Kind::Comma, c.to_string())),
                 '/' => Ok(self.gen_token(Kind::Slash, c.to_string())),
+                '.' => Ok(self.gen_token(Kind::Dot, c.to_string())),
 
                 /* 2/1 character tokens */
                 ':' => {
@@ -321,28 +342,6 @@ impl Scanner {
                         Ok(self.gen_token(Kind::Less, c.to_string()))
                     }
                 }
-
-                '.' => match self.get_next() {
-                    Some(nc) => match nc {
-                        '.' => {
-                            self.advance();
-                            Ok(self.gen_token(Kind::Ddot, "..".to_string()))
-                        }
-                        _ => {
-                            self.advance();
-                            Err(SyntaxError::new(
-                                self.position(),
-                                self.curr_line(),
-                                "Found a single dot. Perhaps you meant \"..\"?".to_string(),
-                            ))
-                        }
-                    },
-                    None => Err(SyntaxError::new(
-                        self.position(),
-                        self.curr_line(),
-                        "Found a single dot right before the end of file.".to_string(),
-                    )),
-                },
 
                 /* comments */
                 '{' => match self.get_next() {

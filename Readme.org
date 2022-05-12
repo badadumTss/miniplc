@@ -351,6 +351,10 @@
      or strings) and when the program terminates they still are in the
      stack. Running MiniPL programs for a long time is still not
      feasible.
+   - Return statements are not checked. this means that if a function
+     should return something a register containing its return value
+     will be availabl , but if the function itself does not properly
+     set it it will contain possibily random values inside.
 ** Work hour log
    The project took about 40 hours of work to complete, the early
    stages of the project were the most critical ones, from the design

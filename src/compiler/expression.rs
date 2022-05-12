@@ -8,37 +8,37 @@ use super::Compiler;
 impl Compiler {
     pub fn compile_expression(&mut self, expr: BinaryExprNode) {
         let label = self.advance_label();
-        self.push_instruction(format!(
+        self.emit(format!(
             "{} left_arm_{};",
             expr.left.as_ref().clone().r_type().to_c_type(),
             label
         ));
-        self.push_instruction(format!(
+        self.emit(format!(
             "{} right_arm_{};",
             expr.right.as_ref().clone().r_type().to_c_type(),
             label
         ));
 
         self.compile_ast(expr.left.as_ref().clone());
-        self.push_instruction(format!(
+        self.emit(format!(
             "left_arm_{} = last_{};",
             label,
             expr.left.as_ref().clone().r_type().to_c_type()
         ));
 
         self.compile_ast(expr.right.as_ref().clone());
-        self.push_instruction(format!(
+        self.emit(format!(
             "right_arm_{} = last_{};",
             label,
             expr.right.as_ref().clone().r_type().to_c_type()
         ));
         match expr.clone().r_type {
             Type::Simple(s) => match s {
-                SimpleType::Int => match expr.op_type {
+                SimpleType::Int | SimpleType::Real => match expr.op_type {
                     BinaryExprType::Addition
                     | BinaryExprType::Subtraction
                     | BinaryExprType::Multiplication
-                    | BinaryExprType::Division => self.push_instruction(format!(
+                    | BinaryExprType::Division => self.emit(format!(
                         "last_{} = right_arm_{} {} left_arm_{};",
                         expr.r_type.to_c_type(),
                         label,
@@ -52,10 +52,9 @@ impl Compiler {
                     ),
                 },
                 SimpleType::String => match expr.op_type {
-                    BinaryExprType::Addition => self.push_instruction(format!(
-                        "strcat(right_arm_{}, left_arm_{});",
-                        label, label
-                    )),
+                    BinaryExprType::Addition => {
+                        self.emit(format!("strcat(right_arm_{}, left_arm_{});", label, label))
+                    }
                     _ => self.push_c_error(
                         ASTNode::BinaryExpression(expr.clone()),
                         format!(
@@ -69,15 +68,15 @@ impl Compiler {
                     BinaryExprType::LogicGreaterThan
                     | BinaryExprType::LogicGreaterThanEQ
                     | BinaryExprType::LogicLessThan
-                    | BinaryExprType::LogicLessThanEQ => self.push_instruction(format!(
+                    | BinaryExprType::LogicLessThanEQ => self.emit(format!(
                         "last_bool = left_arm_{} {} right_arm_{};",
                         label, expr.op.lexeme, label
                     )),
-                    BinaryExprType::LogicEQ => self.push_instruction(format!(
+                    BinaryExprType::LogicEQ => self.emit(format!(
                         "last_bool = left_arm_{} == right_arm_{};",
                         label, label
                     )),
-                    BinaryExprType::LogicAND => self.push_instruction(format!(
+                    BinaryExprType::LogicAND => self.emit(format!(
                         "last_bool = left_arm_{} && right_arm_{};",
                         label, label
                     )),
@@ -105,37 +104,32 @@ impl Compiler {
     pub fn compile_lit(&mut self, expr: LiteralExprNode) {
         match expr.r_type {
             Type::Simple(s) => match s {
-                SimpleType::Int | SimpleType::Bool => self.push_instruction(format!(
+                SimpleType::Int | SimpleType::Bool | SimpleType::Real => self.emit(format!(
                     "last_{} = {};",
                     expr.r_type.to_c_type(),
                     expr.value.to_c_lit()
                 )),
                 SimpleType::String => {
-                    self.push_instruction("last_str = malloc(128 * sizeof(char));".to_string());
-                    self.push_instruction(format!("strcpy(last_str, {});", expr.to_c_lit()));
+                    self.emit("last_str = malloc(128 * sizeof(char));".to_string());
+                    self.emit(format!("strcpy(last_str, \"{}\");", expr.to_c_lit()));
                 }
                 SimpleType::Void => {
                     self.push_c_error(ASTNode::Literal(expr), "literal of type void?")
                 }
             },
             Type::Array(a) => match a {
-                SimpleType::Int => {
-                    let label = self.advance_label();
-                    self.push_instruction(format!("int tmp_{}[] = {};", label, expr.to_c_lit()));
-                    self.push_instruction(format!("last_int_arr = tmp_{};", label));
-                }
-                SimpleType::String => {
-                    let label = self.advance_label();
-                    self.push_instruction(format!("char* tmp_{}[] = {};", label, expr.to_c_lit()));
-                    self.push_instruction(format!("last_str_arr = tmp_{};", label));
-                }
-                SimpleType::Bool => {
-                    let label = self.advance_label();
-                    self.push_instruction(format!("int tmp_{}[] = {};", label, expr.to_c_lit()));
-                    self.push_instruction(format!("last_bool_arr = tmp_{};", label));
-                }
                 SimpleType::Void => {
                     self.push_c_error(ASTNode::Literal(expr), "Found array of void expressions")
+                }
+                _ => {
+                    let label = self.advance_label();
+                    self.emit(format!(
+                        "{} tmp_{}[] = {};",
+                        a.to_c_type(),
+                        label,
+                        expr.to_c_lit()
+                    ));
+                    self.emit(format!("last_{}_arr = tmp_{};", a.to_c_type(), label));
                 }
             },
         }
@@ -143,6 +137,6 @@ impl Compiler {
 
     pub fn compile_unary(&mut self, expr: UnaryExprNode) {
         self.compile_ast(expr.expression.as_ref().clone());
-        self.push_instruction("last_bool = !last_bool;".to_string());
+        self.emit("last_bool = !last_bool;".to_string());
     }
 }

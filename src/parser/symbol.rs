@@ -39,7 +39,7 @@ impl Parser {
                             }))
                         )
                     }
-                    Kind::Semicolon => {
+                    _ => {
                         self.go_back();
                         Ok(ASTNode::VarName(VarNameNode {
                             position: id.position,
@@ -48,13 +48,6 @@ impl Parser {
                             s_type: symbol.s_type,
                         }))
                     }
-                    other => Err(vec![self.error_at_current(
-                        format!(
-                            "Expected either array referencing or nothing, found {}",
-                            other
-                        )
-                        .as_str(),
-                    )]),
                 },
                 _ => Ok(ASTNode::VarName(VarNameNode {
                     position: self.current.position,

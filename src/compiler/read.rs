@@ -10,10 +10,8 @@ impl Compiler {
         let where_to_read = match node.variable_to_read_in.as_ref().clone() {
             ASTNode::VarName(inode) => match inode.r_type {
                 Type::Simple(s) => match s {
-                    SimpleType::Int => format!("&{}", inode.id.lexeme),
                     SimpleType::String => inode.id.lexeme,
-                    SimpleType::Bool => format!("&{}", inode.id.lexeme),
-                    SimpleType::Void => format!("&{}", inode.id.lexeme),
+                    _ => format!("&{}", inode.id.lexeme),
                 },
                 Type::Array(_) => {
                     self.push_c_error(ASTNode::ReadStmt(node.clone()), "Unable to read into array");
@@ -46,6 +44,7 @@ impl Compiler {
                 SimpleType::Int => "%d",
                 SimpleType::String => "%s",
                 SimpleType::Bool => "%d",
+                SimpleType::Real => "%f",
                 SimpleType::Void => {
                     self.push_c_error(
                         ASTNode::ReadStmt(node.clone()),
@@ -62,7 +61,7 @@ impl Compiler {
                 "%d"
             }
         };
-        self.push_instruction(format!(
+        self.emit(format!(
             "last_{} = scanf(\"{}\", {})",
             node.variable_to_read_in.r_type().to_c_type(),
             how_to_read,

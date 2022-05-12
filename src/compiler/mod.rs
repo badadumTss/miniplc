@@ -45,8 +45,7 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn insert_header(&mut self) {
-        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\nint main(){\n\n"
-            .to_string()
+        self.source = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdbool.h>\nint main(){\n\n".to_string()
             + &self.source;
     }
 
@@ -54,11 +53,11 @@ impl Compiler {
         self.source += "\n}\n";
     }
 
-    pub fn push_instruction(&mut self, instr: String) {
+    pub fn emit(&mut self, instr: String) {
         self.raw_instructions = format!("{}    {}\n", self.raw_instructions, instr);
     }
 
-    pub fn push_label(&mut self, label: String) {
+    pub fn emit_label(&mut self, label: String) {
         self.raw_instructions = format!("{}{}:\n", self.raw_instructions, label);
     }
 
