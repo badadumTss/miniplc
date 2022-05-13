@@ -8,14 +8,19 @@ use crate::core::{
 use super::Compiler;
 
 impl Compiler {
+    /// Returns the name of the register with the return value for the
+    /// given function name
     pub fn f_ret_value(name: String) -> String {
         format!("{}_return_value", name)
     }
 
+    /// Returns the name of the register with the return pointer for
+    /// the given function name
     pub fn f_ret_ptr(name: String) -> String {
         format!("{}_return_ptr", name)
     }
 
+    /// Compiles a function declaration
     pub fn compile_function(&mut self, f: FunctionDeclNode) {
         self.scope = f.name.clone();
         trace!("Compiling function declaration");
@@ -39,6 +44,7 @@ impl Compiler {
         self.emit(format!("goto *{};", Compiler::f_ret_ptr(f.name)))
     }
 
+    /// Returns the correct type suffix for register addressing
     pub fn type_for_last(r_type: Type) -> String {
         match r_type {
             Type::Simple(a) => match a {
@@ -52,6 +58,7 @@ impl Compiler {
         }
     }
 
+    /// Compiles a function call
     pub fn compile_function_call(&mut self, f: FunctionCallNode) {
         trace!("Compiling function call");
         let label = self.advance_label();

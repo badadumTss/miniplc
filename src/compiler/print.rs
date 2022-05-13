@@ -6,6 +6,7 @@ use crate::core::{
 use super::Compiler;
 
 impl Compiler {
+    /// Compiles a print statement
     pub fn compile_print(&mut self, node: PrintStmtNode) {
         let child = node.to_print.as_ref();
         self.compile_ast(child.clone());
@@ -14,7 +15,7 @@ impl Compiler {
                 SimpleType::Int => self.emit("printf(\"%d\\n\", last_int);".to_string()),
                 SimpleType::String => self.emit("printf(\"%s\\n\", last_str);".to_string()),
                 SimpleType::Bool => self.emit("printf(\"%d\\n\", last_bool);".to_string()),
-                SimpleType::Real => self.emit("printf(\"%f\\n\", last_float);".to_string()),
+                SimpleType::Real => self.emit("printf(\"%e\\n\", last_double);".to_string()),
                 SimpleType::Void => {
                     self.push_c_error(child.clone(), "Unable to print a void expression");
                 }

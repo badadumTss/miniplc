@@ -17,11 +17,8 @@ impl Parser {
     pub fn parse_symbol(&mut self) -> Result<ASTNode, Vec<SyntaxError>> {
         trace!("parsing symbol");
         let id = self.current.clone();
-        trace!(
-            "parsing symbol {:?}",
-            self.get_symbol(self.current.lexeme.clone())
-        );
-        match self.get_symbol(self.current.lexeme.clone()) {
+        trace!("parsing symbol {:?}", self.get_symbol(id.lexeme.clone()));
+        match self.get_symbol(id.lexeme.clone()) {
             Some(symbol) => match symbol.s_type {
                 SymbolType::Function => self.parse_function_call(),
                 SymbolType::Procedure => self.parse_procedure_call(),
@@ -50,8 +47,8 @@ impl Parser {
                     }
                 },
                 _ => Ok(ASTNode::VarName(VarNameNode {
-                    position: self.current.position,
-                    id: self.current.clone(),
+                    position: id.position,
+                    id,
                     r_type: symbol.r_type,
                     s_type: symbol.s_type,
                 })),

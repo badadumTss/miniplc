@@ -6,6 +6,8 @@ use crate::core::{
 use super::Compiler;
 
 impl Compiler {
+    /// Compiles an expression (binary expressions), hopefully checks
+    /// for everything
     pub fn compile_expression(&mut self, expr: BinaryExprNode) {
         let label = self.advance_label();
         self.emit(format!(

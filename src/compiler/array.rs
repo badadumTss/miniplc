@@ -5,6 +5,8 @@ use crate::core::ast::ArrayRefExpr;
 use super::Compiler;
 
 impl Compiler {
+    /// Compiles an array reference, leaving in the right register its
+    /// value
     pub fn compile_array_ref(&mut self, arr: ArrayRefExpr) {
         trace!("compiling array reference");
         self.compile_ast(arr.index.as_ref().clone());

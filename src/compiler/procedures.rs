@@ -5,6 +5,8 @@ use crate::core::ast::{ProcedureCallNode, ProcedureDeclNode};
 use super::Compiler;
 
 impl Compiler {
+    /// Compiles a procedure declaration, in a similar fashion to the
+    /// `compile_function` function
     pub fn compile_procedure(&mut self, f: ProcedureDeclNode) {
         trace!("Compiling procedure declaration");
         self.scope = f.name.clone();
@@ -23,6 +25,8 @@ impl Compiler {
         self.emit(format!("goto *{};", Compiler::f_ret_ptr(f.name)))
     }
 
+    /// Compiles a function call in a similar way to the
+    /// compile_function_call function
     pub fn compile_procedure_call(&mut self, f: ProcedureCallNode) {
         trace!("Compiling procedure call");
         let label = self.advance_label();

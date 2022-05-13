@@ -117,6 +117,8 @@ impl Compiler {
         }
     }
 
+    /// Compile is the main compilation function. It parses the source
+    /// file and if finds some syntactic errors it returns them
     pub fn compile(&mut self, source: String) -> Result<(), Vec<SyntaxError>> {
         let mut parser = Parser::new(source);
         match parser.parse() {
@@ -128,6 +130,8 @@ impl Compiler {
         }
     }
 
+    /// This function compiles, taking its content as source and
+    /// giving them as the input to the `compile` function
     pub fn compile_file(&mut self, file_name: String) -> Result<String, Error> {
         let mut file = File::open(file_name)?;
         let mut source = String::new();
@@ -146,6 +150,9 @@ impl Compiler {
         }
     }
 
+    /// Utility function to push a compilation error on the stack, it
+    /// sets the compiler in an error state so that the user knows
+    /// that the compilation was unsuccessful
     pub fn push_c_error(&mut self, node: ASTNode, msg: &str) {
         self.state = State::Error;
         self.c_errors.push(CompilationError {

@@ -5,6 +5,7 @@ use crate::core::ast::{ElseStmtNode, IfStmtNode};
 use super::Compiler;
 
 impl Compiler {
+    /// Compiles an if statement
     pub fn compile_if(&mut self, node: IfStmtNode) {
         trace!("compiling if statement");
         let cur = self.advance_label();
@@ -24,6 +25,8 @@ impl Compiler {
         self.emit_label(format!("endif_{}", cur));
     }
 
+    /// Compiles an else, basically just compiles the inner node sine
+    /// the `else` clause is embedded in the if statement compilation
     pub fn compile_else(&mut self, node: ElseStmtNode) {
         self.compile_ast(node.block.as_ref().clone());
     }

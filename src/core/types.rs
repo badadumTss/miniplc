@@ -16,7 +16,7 @@ impl SimpleType {
             SimpleType::String => "char*".to_string(),
             SimpleType::Bool => "bool".to_string(),
             SimpleType::Void => "void".to_string(),
-            SimpleType::Real => "float".to_string(),
+            SimpleType::Real => "double".to_string(),
         }
     }
 }
@@ -31,7 +31,7 @@ impl Display for SimpleType {
                 SimpleType::String => "string",
                 SimpleType::Bool => "bool",
                 SimpleType::Void => "void",
-                SimpleType::Real => "float",
+                SimpleType::Real => "double",
             }
         )
     }
