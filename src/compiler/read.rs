@@ -10,7 +10,7 @@ impl Compiler {
         let where_to_read = match node.variable_to_read_in.as_ref().clone() {
             ASTNode::VarName(inode) => match inode.r_type {
                 Type::Simple(s) => match s {
-                    SimpleType::String => inode.id.lexeme,
+                    SimpleType::String => format!("{}_{}", self.scope, inode.id.lexeme),
                     _ => format!("&{}_{}", self.scope, inode.id.lexeme),
                 },
                 Type::Array(_) => {
@@ -61,11 +61,6 @@ impl Compiler {
                 "%d"
             }
         };
-        self.emit(format!(
-            "last_{} = scanf(\"{}\", {});",
-            node.variable_to_read_in.r_type().to_c_type(),
-            how_to_read,
-            where_to_read
-        ));
+        self.emit(format!("scanf(\"{}\", {});", how_to_read, where_to_read));
     }
 }
