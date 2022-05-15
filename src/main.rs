@@ -13,7 +13,7 @@ use std::io::Write;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    /// File to interpret
+    /// File to compile
     #[clap(short, long)]
     file: String,
 
